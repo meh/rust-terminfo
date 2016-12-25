@@ -24,6 +24,7 @@ use error::{self, Error};
 use nom::IResult;
 use parser::compiled;
 
+/// A capability database.
 #[derive(Eq, PartialEq, Clone, Debug, Default)]
 pub struct Database {
 	name:        String,
@@ -34,6 +35,7 @@ pub struct Database {
 }
 
 impl Database {
+	/// Create a new database from the given values.
 	pub fn new(name: String, aliases: Vec<String>, description: String, inner: HashMap<String, Value>) -> Self {
 		Database {
 			name:        name,
@@ -44,6 +46,7 @@ impl Database {
 		}
 	}
 
+	/// Load a database from the current environment.
 	pub fn from_env() -> error::Result<Self> {
 		if let Ok(name) = env::var("TERM") {
 			Self::from_name(name)
@@ -53,6 +56,7 @@ impl Database {
 		}
 	}
 
+	/// Load a database for the given name.
 	pub fn from_name<N: AsRef<str>>(name: N) -> error::Result<Self> {
 		let name  = name.as_ref();
 		let first = name.chars().next().ok_or(Error::NotFound)?;
@@ -116,6 +120,7 @@ impl Database {
 		Err(Error::NotFound)
 	}
 
+	/// Load a database from the given path.
 	pub fn from_path<P: AsRef<Path>>(path: P) -> error::Result<Self> {
 		let mut file = File::open(path)?;
 		let mut buffer = Vec::new();
@@ -129,22 +134,48 @@ impl Database {
 		}
 	}
 
+	/// The terminal name.
 	pub fn name(&self) -> &str {
 		&self.name
 	}
 
+	/// The terminal aliases.
 	pub fn aliases(&self) -> &[String] {
 		&self.aliases
 	}
 
+	/// The terminal description.
 	pub fn description(&self) -> &str {
 		&self.description
 	}
 
+	/// Get a capability.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// use terminfo::{Database, capability as cap};
+	///
+	/// let info        = Database::from_env().unwrap();
+	/// let colors: i16 = info.get::<cap::MaxColors>().unwrap().into();
+	/// ```
 	pub fn get<'a, C: Capability<'a>>(&'a self) -> Option<C> {
 		C::parse(self.inner.get(C::name()))
 	}
 
+	/// Get a capability by name.
+	///
+	/// This interface only makes sense for extended capabilities since they
+	/// don't have standardized types.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// use terminfo::Database;
+	///
+	/// let info      = Database::from_env().unwrap();
+	/// let truecolor = info.raw("Tc").is_some();
+	/// ```
 	pub fn raw<S: AsRef<str>>(&self, name: S) -> Option<&Value> {
 		let name = name.as_ref();
 

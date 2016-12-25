@@ -12,18 +12,30 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+///! Standard capabilities.
+
 use expand::{Expand, Parameter, Context};
 use error;
 
+/// A trait for any object that will represent a terminal capability.
 pub trait Capability<'a>: Sized {
+	/// Returns the name of the capability in its long form.
 	fn name() -> &'static str;
+
+	/// Parse the capability from its raw value.
 	fn parse(value: Option<&'a Value>) -> Option<Self>;
 }
 
+/// Possible value types for capabilities.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Value {
+	/// A boolean.
 	Boolean(bool),
+
+	/// A number.
 	Number(i16),
+
+	/// An ASCII string requiring expansion.
 	String(Vec<u8>),
 }
 

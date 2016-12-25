@@ -14,13 +14,18 @@
 
 use error;
 
+/// Trait for items that can be expanded.
 pub trait Expand {
 	fn expand(&self, parameters: &[Parameter], context: &mut Context) -> error::Result<Vec<u8>>;
 }
 
+/// An expansion parameter.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Parameter {
+	/// A number.
 	Number(i32),
+
+	/// An ASCII string.
 	String(Vec<u8>),
 }
 
@@ -30,6 +35,10 @@ impl Default for Parameter {
 	}
 }
 
+/// The expansion context.
+///
+/// The same context should be passed around through every expansion for the
+/// same `Database`.
 #[derive(Eq, PartialEq, Default, Debug)]
 pub struct Context {
 	pub fixed:   [Parameter; 26],
