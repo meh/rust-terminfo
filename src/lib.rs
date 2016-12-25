@@ -19,7 +19,7 @@ mod error;
 pub use error::{Error, Result};
 
 mod names;
-pub mod parser;
+mod parser;
 
 pub mod capability;
 pub use capability::{Capability, Value};

@@ -59,7 +59,7 @@ impl<'a> Into<::Database> for Database<'a> {
 
 		if let Some(extended) = self.extended {
 			let names = extended.table.split(|&c| c == 0)
-				.skip(extended.strings.len())
+				.skip(extended.strings.iter().cloned().filter(|&n| n >= 0).count())
 				.map(|s| unsafe { str::from_utf8_unchecked(s) })
 				.collect::<Vec<_>>();
 
