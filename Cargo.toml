@@ -1,0 +1,13 @@
+[package]
+name    = "terminfo"
+version = "0.1.0"
+
+authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
+
+description = "Terminal information."
+repository  = "https://github.com/meh/rust-terminfo"
+keywords    = ["terminal", "terminfo", "termcap", "term"]
+
+[dependencies]
+nom = "2.0"
