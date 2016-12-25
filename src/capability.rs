@@ -59,6 +59,12 @@ macro_rules! define {
 				}
 			}
 		}
+
+		impl Into<bool> for $ident {
+			fn into(self) -> bool {
+				self.0
+			}
+		}
 	);
 
 	(number $ident:ident => $name:expr) => (
@@ -79,6 +85,12 @@ macro_rules! define {
 				else {
 					None
 				}
+			}
+		}
+
+		impl Into<i16> for $ident {
+			fn into(self) -> i16 {
+				self.0
 			}
 		}
 	);
