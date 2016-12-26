@@ -39,7 +39,7 @@ impl<'a> Into<::Database> for Database<'a> {
 
 		let mut capabilities = HashMap::new();
 
-		for (index, &value) in self.standard.booleans.iter().enumerate() {
+		for (index, &value) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			capabilities.entry(BOOLEAN_LONG_NAMES[index].into())
 				.or_insert(Value::Boolean(value));
 		}
@@ -63,7 +63,7 @@ impl<'a> Into<::Database> for Database<'a> {
 				.map(|s| unsafe { str::from_utf8_unchecked(s) })
 				.collect::<Vec<_>>();
 
-			for (index, &value) in extended.booleans.iter().enumerate() {
+			for (index, &value) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value)  {
 				capabilities.entry(names[index].into())
 					.or_insert(Value::Boolean(value));
 			}
