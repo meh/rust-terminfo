@@ -12,7 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-pub const BOOLEAN_LONG_NAMES: &'static [&'static str] = &[
+pub const BOOLEAN: &'static [&'static str] = &[
 	"auto_left_margin", "auto_right_margin", "no_esc_ctlc", "ceol_standout_glitch",
 	"eat_newline_glitch", "erase_overstrike", "generic_type", "hard_copy", "has_meta_key",
 	"has_status_line", "insert_null_glitch", "memory_above", "memory_below", "move_insert_mode",
@@ -25,17 +25,7 @@ pub const BOOLEAN_LONG_NAMES: &'static [&'static str] = &[
 	"gnu_has_meta_key", "linefeed_is_newline", "has_hardware_tabs", "return_does_clr_eol"
 ];
 
-pub const BOOLEAN_NAMES: &'static [&'static str] = &[
-	"bw", "am", "xsb", "xhp", "xenl", "eo", "gn",
-	"hc", "km", "hs", "in", "db", "da", "mir",
-	"msgr", "os", "eslok", "xt", "hz", "ul", "xon",
-	"nxon", "mc5i", "chts", "nrrmc", "npc", "ndscr",
-	"ccc", "bce", "hls", "xhpa", "crxm", "daisy",
-	"xvpa", "sam", "cpix", "lpix", "OTbs", "OTns",
-	"OTnc", "OTMT", "OTNL", "OTpt", "OTxr"
-];
-
-pub const NUMBER_LONG_NAMES: &'static [&'static str] = &[
+pub const NUMBER: &'static [&'static str] = &[
 	"columns", "init_tabs", "lines", "lines_of_memory", "magic_cookie_glitch", "padding_baud_rate",
 	"virtual_terminal", "width_status_line", "num_labels", "label_height", "label_width",
 	"max_attributes", "maximum_windows", "max_colors", "max_pairs", "no_color_video",
@@ -47,14 +37,7 @@ pub const NUMBER_LONG_NAMES: &'static [&'static str] = &[
 	"number_of_function_keys"
 ];
 
-pub const NUMBER_NAMES: &'static [&'static str] = &[
-	"cols", "it", "lines", "lm", "xmc", "pb", "vt", "wsl", "nlab", "lh", "lw", "ma", "wnum",
-	"colors", "pairs", "ncv", "bufsz", "spinv", "spinh", "maddr", "mjump", "mcs", "mls", "npins",
-	"orc", "orl", "orhi", "orvi", "cps", "widcs", "btns", "bitwin", "bitype", "UTug", "OTdC",
-	"OTdN", "OTdB", "OTdT", "OTkn"
-];
-
-pub const STRING_LONG_NAMES: &'static [&'static str] = &[
+pub const STRING: &'static [&'static str] = &[
 	"back_tab", "bell", "carriage_return", "change_scroll_region", "clear_all_tabs",
 	"clear_screen", "clr_eol", "clr_eos", "column_address", "command_character", "cursor_address",
 	"cursor_down", "cursor_home", "cursor_invisible", "cursor_left", "cursor_mem_address",
@@ -129,37 +112,4 @@ pub const STRING_LONG_NAMES: &'static [&'static str] = &[
 	"acs_hline", "acs_vline", "acs_plus", "memory_lock", "memory_unlock", "box_chars_1"
 ];
 
-pub const STRING_NAMES: &'static [&'static str] = &[
-	"cbt", "_", "cr", "csr", "tbc", "clear", "_", "_", "hpa", "cmdch", "cup", "cud1", "home",
-	"civis", "cub1", "mrcup", "cnorm", "cuf1", "ll", "cuu1", "cvvis", "dch1", "dl1", "dsl", "hd",
-	"smacs", "blink", "bold", "smcup", "smdc", "dim", "smir", "invis", "prot", "rev", "smso",
-	"smul", "ech", "rmacs", "sgr0", "rmcup", "rmdc", "rmir", "rmso", "rmul", "flash", "ff", "fsl",
-	"is1", "is2", "is3", "if", "ich1", "il1", "ip", "kbs", "ktbc", "kclr", "kctab", "_", "_",
-	"kcud1", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "khome", "_",
-	"_", "kcub1", "_", "knp", "kpp", "kcuf1", "_", "_", "khts", "_", "rmkx", "smkx", "_", "_", "_",
-	"_", "_", "_", "_", "_", "_", "_", "_", "rmm", "_", "_", "pad", "dch", "dl", "cud", "ich",
-	"indn", "il", "cub", "cuf", "rin", "cuu", "pfkey", "pfloc", "pfx", "mc0", "mc4", "_", "rep",
-	"rs1", "rs2", "rs3", "rf", "rc", "vpa", "sc", "ind", "ri", "sgr", "_", "wind", "_", "tsl",
-	"uc", "hu", "iprog", "_", "_", "_", "_", "_", "mc5p", "rmp", "acsc", "pln", "kcbt", "smxon",
-	"rmxon", "smam", "rmam", "xonc", "xoffc", "_", "smln", "rmln", "_", "kcan", "kclo", "kcmd",
-	"kcpy", "kcrt", "_", "kent", "kext", "kfnd", "khlp", "kmrk", "kmsg", "kmov", "knxt", "kopn",
-	"kopt", "kprv", "kprt", "krdo", "kref", "krfr", "krpl", "krst", "kres", "ksav", "kspd", "kund",
-	"kBEG", "kCAN", "kCMD", "kCPY", "kCRT", "_", "_", "kslt", "kEND", "kEOL", "kEXT", "kFND",
-	"kHLP", "kHOM", "_", "kLFT", "kMSG", "kMOV", "kNXT", "kOPT", "kPRV", "kPRT", "kRDO", "kRPL",
-	"kRIT", "kRES", "kSAV", "kSPD", "kUND", "rfi", "_", "_", "_", "_", "_", "_", "_", "_", "_",
-	"_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_",
-	"_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_",
-	"_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "dclk", "rmclk", "cwin", "wingo",
-	"_", "dial", "qdial", "_", "_", "hook", "pause", "wait", "_", "_", "_", "_", "_", "_", "_",
-	"_", "_", "_", "op", "oc", "initc", "initp", "scp", "setf", "setb", "cpi", "lpi", "chr", "cvr",
-	"defc", "swidm", "sdrfq", "sitm", "slm", "smicm", "snlq", "snrmq", "sshm", "ssubm", "ssupm",
-	"sum", "rwidm", "ritm", "rlm", "rmicm", "rshm", "rsubm", "rsupm", "rum", "mhpa", "mcud1",
-	"mcub1", "mcuf1", "mvpa", "mcuu1", "porder", "mcud", "mcub", "mcuf", "mcuu", "scs", "smgb",
-	"smgbp", "smglp", "smgrp", "smgt", "smgtp", "sbim", "scsd", "rbim", "rcsd", "subcs", "supcs",
-	"docr", "zerom", "csnm", "kmous", "minfo", "reqmp", "getm", "setaf", "setab", "pfxl", "devt",
-	"csin", "s0ds", "s1ds", "s2ds", "s3ds", "smglr", "smgtb", "birep", "binel", "bicr", "colornm",
-	"defbi", "endbi", "setcolor", "slines", "dispc", "smpch", "rmpch", "smsc", "rmsc", "pctrm",
-	"scesc", "scesa", "ehhlm", "elhlm", "elohlm", "erhlm", "ethlm", "evhlm", "sgr1", "slength",
-	"OTi2", "OTrs", "OTnl", "OTbs", "OTko", "OTma", "OTG2", "OTG3", "OTG1", "OTG4", "OTGR", "OTGL",
-	"OTGU", "OTGD", "OTGH", "OTGV", "OTGC", "meml", "memu", "box1"
-];
+include!(concat!(env!("OUT_DIR"), "/aliases.rs"));

@@ -16,7 +16,7 @@ use std::str;
 use std::collections::HashMap;
 
 use nom::le_i16;
-use names::*;
+use names;
 use capability::Value;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -40,12 +40,12 @@ impl<'a> Into<::Database> for Database<'a> {
 		let mut capabilities = HashMap::new();
 
 		for (index, &value) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
-			capabilities.entry(BOOLEAN_LONG_NAMES[index].into())
+			capabilities.entry(names::BOOLEAN[index].into())
 				.or_insert(Value::Boolean(value));
 		}
 
 		for (index, &value) in self.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-			capabilities.entry(NUMBER_LONG_NAMES[index].into())
+			capabilities.entry(names::NUMBER[index].into())
 				.or_insert(Value::Number(value));
 		}
 
@@ -53,7 +53,7 @@ impl<'a> Into<::Database> for Database<'a> {
 			let string = &self.standard.table[offset as usize ..];
 			let edge   = string.iter().position(|&c| c == 0).unwrap();
 
-			capabilities.entry(STRING_LONG_NAMES[index].into())
+			capabilities.entry(names::STRING[index].into())
 				.or_insert(Value::String(Vec::from(&string[.. edge])));
 		}
 

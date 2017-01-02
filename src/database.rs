@@ -19,7 +19,7 @@ use std::fs::{self, File};
 use std::io::Read;
 
 use capability::{Capability, Value};
-use names::*;
+use names;
 use error::{self, Error};
 use nom::IResult;
 use parser::compiled;
@@ -184,17 +184,7 @@ impl Database {
 	pub fn raw<S: AsRef<str>>(&self, name: S) -> Option<&Value> {
 		let name = name.as_ref();
 
-		self.inner.get(if let Some(index) = BOOLEAN_NAMES.iter().position(|&n| n == name) {
-			BOOLEAN_LONG_NAMES[index]
-		}
-		else if let Some(index) = NUMBER_NAMES.iter().position(|&n| n == name) {
-			NUMBER_LONG_NAMES[index]
-		}
-		else if let Some(index) = STRING_NAMES.iter().position(|&n| n == name) {
-			STRING_LONG_NAMES[index]
-		}
-		else {
-			name
-		})
+		self.inner.get(name).or_else(||
+			names::ALIASES.get(name).and_then(|&name| self.inner.get(name)))
 	}
 }

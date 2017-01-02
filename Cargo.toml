@@ -9,5 +9,11 @@ description = "Terminal information."
 repository  = "https://github.com/meh/rust-terminfo"
 keywords    = ["terminal", "terminfo", "termcap", "term"]
 
+build = "build.rs"
+
 [dependencies]
 nom = "2.0"
+phf = "0.7"
+
+[build-dependencies]
+phf_codegen = "0.7"
