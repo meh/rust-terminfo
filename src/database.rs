@@ -126,7 +126,12 @@ impl Database {
 		let mut buffer = Vec::new();
 		file.read_to_end(&mut buffer)?;
 
-		if let IResult::Done(_, database) = compiled::parse(&buffer) {
+		Self::from_buffer(buffer)
+	}
+
+	/// Load a database from a buffer.
+	pub fn from_buffer<T: AsRef<[u8]>>(buffer: T) -> error::Result<Self> {
+		if let IResult::Done(_, database) = compiled::parse(buffer.as_ref()) {
 			Ok(database.into())
 		}
 		else {
