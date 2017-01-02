@@ -35,6 +35,24 @@ impl Default for Parameter {
 	}
 }
 
+impl From<i32> for Parameter {
+	fn from(value: i32) -> Self {
+		Parameter::Number(value)
+	}
+}
+
+impl From<Vec<u8>> for Parameter {
+	fn from(value: Vec<u8>) -> Self {
+		Parameter::String(value)
+	}
+}
+
+impl<'a> From<&'a [u8]> for Parameter {
+	fn from(value: &'a [u8]) -> Self {
+		Parameter::String(value.to_vec())
+	}
+}
+
 /// The expansion context.
 ///
 /// The same context should be passed around through every expansion for the
@@ -43,6 +61,18 @@ impl Default for Parameter {
 pub struct Context {
 	pub fixed:   [Parameter; 26],
 	pub dynamic: [Parameter; 26],
+}
+
+#[macro_export]
+macro_rules! expand {
+	($value:expr; $($item:expr),*) => (
+		expand!($value => &mut Default::default(); $($item),*)
+	);
+
+	($value:expr => $context:expr; $($item:expr),*) => ({
+		use $crate::Expand;
+		$value.expand(&[$($item.into()),*], $context)
+	})
 }
 
 impl Expand for [u8] {
@@ -608,11 +638,9 @@ impl Expand for [u8] {
 
 #[cfg(test)]
 mod test {
-	use super::*;
-
 	#[test]
 	fn test_basic_setabf() {
 		assert_eq!(b"\\E[48;5;1m".to_vec(),
-			Expand::expand(&b"\\E[48;5;%p1%dm"[..], &[Parameter::Number(1)], &mut Default::default()).unwrap());
+			expand!(b"\\E[48;5;%p1%dm"; 1).unwrap());
 	}
 }

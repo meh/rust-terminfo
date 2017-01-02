@@ -24,6 +24,7 @@ mod parser;
 pub mod capability;
 pub use capability::{Capability, Value};
 
+#[macro_use]
 mod expand;
 pub use expand::{Expand, Parameter};
 
