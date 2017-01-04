@@ -65,6 +65,14 @@ pub struct Context {
 
 #[macro_export]
 macro_rules! expand {
+	($value:expr) => (
+		expand!($value;)
+	);
+
+	($value:expr => $context:expr) => (
+		expand!($value => $context;)
+	);
+
 	($value:expr; $($item:expr),*) => (
 		expand!($value => &mut Default::default(); $($item),*)
 	);
