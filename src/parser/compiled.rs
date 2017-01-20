@@ -40,21 +40,27 @@ impl<'a> Into<::Database> for Database<'a> {
 		let mut capabilities = HashMap::new();
 
 		for (index, &value) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
-			capabilities.entry(names::BOOLEAN[index].into())
-				.or_insert(Value::Boolean(value));
+			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
+				capabilities.entry(name.into())
+					.or_insert(Value::Boolean(value));
+			}
 		}
 
 		for (index, &value) in self.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-			capabilities.entry(names::NUMBER[index].into())
-				.or_insert(Value::Number(value));
+			if let Some(&name) = names::NUMBER.get(&(index as u16)) {
+				capabilities.entry(name.into())
+					.or_insert(Value::Number(value));
+			}
 		}
 
 		for (index, &offset) in self.standard.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-			let string = &self.standard.table[offset as usize ..];
-			let edge   = string.iter().position(|&c| c == 0).unwrap();
+			if let Some(&name) = names::STRING.get(&(index as u16)) {
+				let string = &self.standard.table[offset as usize ..];
+				let edge   = string.iter().position(|&c| c == 0).unwrap();
 
-			capabilities.entry(names::STRING[index].into())
-				.or_insert(Value::String(Vec::from(&string[.. edge])));
+				capabilities.entry(name.into())
+					.or_insert(Value::String(Vec::from(&string[.. edge])));
+			}
 		}
 
 		if let Some(extended) = self.extended {
