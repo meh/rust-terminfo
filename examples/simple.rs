@@ -6,7 +6,7 @@ use terminfo::{Expand, Database, capability as cap};
 fn main() {
   let info = Database::from_env().unwrap();
 
-  if let Some(cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
+  if let Some(&cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
     println!("The terminal supports {} colors.", n);
   }
   else {

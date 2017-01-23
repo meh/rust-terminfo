@@ -164,8 +164,8 @@ impl Database {
 	/// let info        = Database::from_env().unwrap();
 	/// let colors: i16 = info.get::<cap::MaxColors>().unwrap().into();
 	/// ```
-	pub fn get<'a, C: Capability<'a>>(&'a self) -> Option<C> {
-		C::parse(self.inner.get(C::name()))
+	pub fn get<C: ?Sized + Capability>(&self) -> Option<&C> {
+		C::lookup(self)
 	}
 
 	/// Get a capability by name.

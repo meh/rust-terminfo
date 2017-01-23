@@ -18,15 +18,15 @@ use expand::{Expand, Parameter, Context};
 use error;
 
 /// A trait for any object that will represent a terminal capability.
-pub trait Capability<'a>: Sized {
+pub trait Capability {
 	/// Returns the name of the capability in its long form.
 	fn name() -> &'static str;
 
-	/// Parse the capability from its raw value.
-	fn parse(value: Option<&'a Value>) -> Option<Self>;
+	/// Lookup a capability in a database
+	fn lookup(db: &::Database) -> Option<&Self>;
 }
 
-/// Possible value types for capabilities.
+/// Possible values for capabilities.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Value {
 	/// A boolean.
@@ -52,89 +52,108 @@ impl Expand for Value {
 
 macro_rules! define {
 	(boolean $ident:ident => $name:expr) => (
-		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+		#[derive(Eq, PartialEq, Debug)]
 		pub struct $ident(pub bool);
 
-		impl<'a> Capability<'a> for $ident {
+		impl Capability for $ident {
 			#[inline]
 			fn name() -> &'static str {
 				$name
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
-				if let Some(&Value::Boolean(value)) = value {
-					Some($ident(value))
-				}
-				else {
-					Some($ident(false))
-				}
+			fn lookup(db: &::Database) -> Option<&Self> {
+				static TRUE: $ident = $ident(true);
+				static FALSE: $ident = $ident(false);
+				Some(match db.raw(Self::name()) {
+					Some(&Value::Boolean(true)) => &TRUE,
+					None => &FALSE,
+					_ => panic!("invalid database"),
+				})
 			}
 		}
 
-		impl Into<bool> for $ident {
-			fn into(self) -> bool {
-				self.0
+		impl From<$ident> for bool {
+			fn from(cap: $ident) -> bool {
+				cap.0
+			}
+		}
+
+		// Not strictly necessary but rust misses this deref due to generics.
+		impl<'a> From<&'a $ident> for bool {
+			fn from(cap: &'a $ident) -> bool {
+				cap.0
 			}
 		}
 	);
 
 	(number $ident:ident => $name:expr) => (
-		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+		#[derive(Eq, PartialEq, Debug)]
 		pub struct $ident(pub i16);
 
-		impl<'a> Capability<'a> for $ident {
+		impl Capability for $ident {
 			#[inline]
 			fn name() -> &'static str {
 				$name
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
-				if let Some(&Value::Number(value)) = value {
-					Some($ident(value))
-				}
-				else {
-					None
+			fn lookup<'a>(db: &::Database) -> Option<&Self> {
+				match db.raw(Self::name()) {
+					Some(&Value::Number(ref num)) => unsafe {
+						Some(&*(num as *const i16 as *const $ident))
+					},
+					None => None,
+					_ => panic!("invalid database"),
 				}
 			}
 		}
 
-		impl Into<i16> for $ident {
-			fn into(self) -> i16 {
-				self.0
+		impl From<$ident> for i16 {
+			fn from(cap: $ident) -> i16 {
+				cap.0
+			}
+		}
+
+		// Not strictly necessary but rust misses this deref due to generics.
+		impl<'a> From<&'a $ident> for i16 {
+			fn from(cap: &'a $ident) -> i16 {
+				cap.0
 			}
 		}
 	);
 
 	(string $ident:ident => $name:expr) => (
-		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-		pub struct $ident<'a>(&'a [u8]);
+		#[derive(Eq, PartialEq, Debug)]
+		pub struct $ident(pub [u8]);
 
-		impl<'a> AsRef<[u8]> for $ident<'a> {
-			fn as_ref(&self) -> &[u8] {
-				self.0
-			}
-		}
 
-		impl<'a> Capability<'a> for $ident<'a> {
+		impl Capability for $ident {
 			#[inline]
 			fn name() -> &'static str {
 				$name
 			}
 
 			#[inline]
-			fn parse(value: Option<&'a Value>) -> Option<$ident<'a>> {
-				if let Some(&Value::String(ref value)) = value {
-					Some($ident(value))
-				}
-				else {
-					None
+			fn lookup<'a>(db: &'a ::Database) -> Option<&'a Self> {
+				match db.raw(Self::name()) {
+					Some(&Value::String(ref s)) => unsafe {
+						Some(&*(&**s as *const [u8] as *const $ident))
+					},
+					None => None,
+					_ => panic!("invalid database"),
 				}
 			}
 		}
 
-		impl<'a> Expand for $ident<'a> {
+
+		impl AsRef<[u8]> for $ident {
+			fn as_ref(&self) -> &[u8] {
+				&self.0
+			}
+		}
+
+		impl Expand for $ident {
 			fn expand(&self, parameters: &[Parameter], context: &mut Context) -> error::Result<Vec<u8>> {
 				self.0.expand(parameters, context)
 			}

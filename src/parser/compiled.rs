@@ -228,9 +228,9 @@ mod test {
 	#[test]
 	fn standard() {
 		load("tests/st-256color", |db| {
-			assert_eq!(Some(cap::Columns(80)), db.get::<cap::Columns>());
-			assert_eq!(Some(cap::AutoRightMargin(true)), db.get::<cap::AutoRightMargin>());
-			assert_eq!(Some(cap::AutoLeftMargin(false)), db.get::<cap::AutoLeftMargin>());
+			assert_eq!(Some(&cap::Columns(80)), db.get::<cap::Columns>());
+			assert_eq!(Some(&cap::AutoRightMargin(true)), db.get::<cap::AutoRightMargin>());
+			assert_eq!(Some(&cap::AutoLeftMargin(false)), db.get::<cap::AutoLeftMargin>());
 		});
 	}
 
