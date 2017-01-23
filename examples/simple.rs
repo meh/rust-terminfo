@@ -1,8 +1,8 @@
 #[macro_use(expand)]
 extern crate terminfo;
 
-use std::io::{self, Write};
-use terminfo::{Expand, Database, capability as cap};
+use std::io;
+use terminfo::{Database, capability as cap};
 
 fn main() {
   let info = Database::from_env().unwrap();
@@ -20,4 +20,9 @@ fn main() {
 	else {
 		println!("FLASH GORDON!");
 	}
+
+	expand!(io::stdout(), info.get::<cap::SetAForeground>().unwrap(); 1).unwrap();
+	expand!(io::stdout(), info.get::<cap::SetABackground>().unwrap(); 4).unwrap();
+	println!("SUP");
+	expand!(io::stdout(), info.get::<cap::ExitAttributeMode>().unwrap()).unwrap();
 }
