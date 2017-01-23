@@ -173,7 +173,7 @@ named!(pub parse<Database>,
 
 		(Database {
 			names: names,
-			
+
 			standard: Standard {
 				booleans: booleans,
 				numbers:  numbers,
