@@ -170,6 +170,8 @@ impl Database {
 
 	/// Get a capability by name.
 	///
+	/// ## Note
+	///
 	/// This interface only makes sense for extended capabilities since they
 	/// don't have standardized types.
 	///
