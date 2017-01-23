@@ -56,3 +56,42 @@ macro_rules! all {
 		all!($i, call!($f));
 	);
 }
+
+macro_rules! take_until_or_eof (
+  ($i:expr, $substr:expr) => (
+    {
+      use $crate::nom::InputLength;
+      use $crate::nom::FindSubstring;
+      use $crate::nom::Slice;
+
+      let res: $crate::nom::IResult<_,_> = if $substr.input_len() > $i.input_len() {
+        $crate::nom::IResult::Incomplete($crate::nom::Needed::Size($substr.input_len()))
+      } else {
+        match ($i).find_substring($substr) {
+          None => {
+            $crate::nom::IResult::Done($i.slice(0..0), $i)
+          },
+          Some(index) => {
+            $crate::nom::IResult::Done($i.slice(index..), $i.slice(0..index))
+          },
+        }
+      };
+      res
+    }
+  );
+);
+
+#[inline]
+pub fn number(i: &[u8]) -> i32 {
+	let mut n: i32 = 0;
+
+	for &ch in i {
+		let d = (ch as i32).wrapping_sub(b'0' as i32);
+
+		if d <= 9 {
+			n = n.saturating_mul(10).saturating_add(d);
+		}
+	}
+
+	n
+}

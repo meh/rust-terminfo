@@ -16,3 +16,4 @@
 mod util;
 
 pub mod compiled;
+pub mod expansion;

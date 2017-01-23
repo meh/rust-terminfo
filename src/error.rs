@@ -26,16 +26,9 @@ pub enum Error {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Expand {
-	StackUnderflow,
+	Invalid,
 	TypeMismatch,
-	UnrecognizedFormatOption(u8),
-	InvalidVariableName(u8),
-	InvalidParameterIndex(u8),
-	MalformedCharacterConstant,
-	IntegerConstantOverflow,
-	MalformedIntegerConstant,
-	FormatWidthOverflow,
-	FormatPrecisionOverflow,
+	StackUnderflow,
 }
 
 pub type Result<T> = ::std::result::Result<T, Error>;
@@ -72,35 +65,14 @@ impl error::Error for Error {
 
 			Error::Expand(ref err) =>
 				match *err {
+					Expand::Invalid =>
+						"The expansion string is invalid.",
+
 					Expand::StackUnderflow =>
 						"Not enough elements on the stack.",
 
 					Expand::TypeMismatch =>
 						"Type mismatch.",
-
-					Expand::UnrecognizedFormatOption(..) =>
-						"Unrecognized format option.",
-
-					Expand::InvalidVariableName(..) =>
-						"Invalid variable name.",
-
-					Expand::InvalidParameterIndex(..) =>
-						"Invalid parameter index.",
-
-					Expand::MalformedCharacterConstant =>
-						"Malformed character constant.",
-
-					Expand::IntegerConstantOverflow =>
-						"Integer constant computation overflowed.",
-
-					Expand::MalformedIntegerConstant =>
-						"Malformed integer constant.",
-
-					Expand::FormatWidthOverflow =>
-						"Format width constant computation overflowed.",
-
-					Expand::FormatPrecisionOverflow =>
-						"Format precision constant computation overflowed.",
 				},
 		}
 	}

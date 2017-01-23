@@ -1,3 +1,4 @@
+#[macro_use(expand)]
 extern crate terminfo;
 
 use std::io::{self, Write};
@@ -14,7 +15,7 @@ fn main() {
   }
 
   if let Some(flash) = info.get::<cap::FlashScreen>() {
-    io::stdout().write_all(&flash.expand(&[], &mut Default::default()).unwrap()).unwrap();
+		expand!(io::stdout(), flash).unwrap();
   }
 	else {
 		println!("FLASH GORDON!");

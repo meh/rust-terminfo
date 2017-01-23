@@ -14,6 +14,8 @@
 
 ///! Standard capabilities.
 
+use std::io::Write;
+
 use expand::{Expand, Parameter, Context};
 use error;
 
@@ -40,9 +42,9 @@ pub enum Value {
 }
 
 impl Expand for Value {
-	fn expand(&self, parameters: &[Parameter], context: &mut Context) -> error::Result<Vec<u8>> {
+	fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
 		if let &Value::String(ref buffer) = self {
-			buffer.expand(parameters, context)
+			buffer.expand(output, parameters, context)
 		}
 		else {
 			Err(error::Expand::TypeMismatch.into())
@@ -135,8 +137,8 @@ macro_rules! define {
 		}
 
 		impl<'a> Expand for $ident<'a> {
-			fn expand(&self, parameters: &[Parameter], context: &mut Context) -> error::Result<Vec<u8>> {
-				self.0.expand(parameters, context)
+			fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
+				self.0.expand(output, parameters, context)
 			}
 		}
 	);
