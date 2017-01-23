@@ -30,7 +30,7 @@ pub trait Capability<'a>: Sized {
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Value {
 	/// A boolean.
-	Boolean(bool),
+	True,
 
 	/// A number.
 	Number(i16),
@@ -63,8 +63,8 @@ macro_rules! define {
 
 			#[inline]
 			fn parse(value: Option<&Value>) -> Option<Self> {
-				if let Some(&Value::Boolean(value)) = value {
-					Some($ident(value))
+				if let Some(&Value::True) = value {
+					Some($ident(true))
 				}
 				else {
 					Some($ident(false))

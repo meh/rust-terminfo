@@ -39,10 +39,10 @@ impl<'a> Into<::Database> for Database<'a> {
 
 		let mut capabilities = HashMap::new();
 
-		for (index, &value) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
+		for (index, _) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
 				capabilities.entry(name.into())
-					.or_insert(Value::Boolean(value));
+					.or_insert(Value::True);
 			}
 		}
 
@@ -69,9 +69,9 @@ impl<'a> Into<::Database> for Database<'a> {
 				.map(|s| unsafe { str::from_utf8_unchecked(s) })
 				.collect::<Vec<_>>();
 
-			for (index, &value) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value)  {
+			for (index, _) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value)  {
 				capabilities.entry(names[index].into())
-					.or_insert(Value::Boolean(value));
+					.or_insert(Value::True);
 			}
 
 			for (index, &value) in extended.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
@@ -243,8 +243,8 @@ mod test {
 	#[test]
 	fn extended() {
 		load("tests/cancer-256color", |db| {
-			assert_eq!(Some(&cap::Value::Boolean(true)), db.raw("Ts"));
-			assert_eq!(Some(&cap::Value::Boolean(true)), db.raw("AX"));
+			assert_eq!(Some(&cap::Value::True), db.raw("Ts"));
+			assert_eq!(Some(&cap::Value::True), db.raw("AX"));
 			assert_eq!(Some(&cap::Value::String(b"\x1B[2 q".to_vec())), db.raw("Se"));
 		});
 	}
