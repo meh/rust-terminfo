@@ -22,8 +22,8 @@ pub trait Capability<'a>: Sized {
 	/// Returns the name of the capability in its long form.
 	fn name() -> &'static str;
 
-	/// Parse the capability from its raw value.
-	fn parse(value: Option<&'a Value>) -> Option<Self>;
+	/// Lookup a capability in a database
+	fn lookup(db: &'a ::Database) -> Option<Self>;
 }
 
 /// Possible value types for capabilities.
@@ -62,13 +62,12 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
-				if let Some(&Value::Boolean(value)) = value {
-					Some($ident(value))
-				}
-				else {
-					Some($ident(false))
-				}
+			fn lookup(db: &'a ::Database) -> Option<Self> {
+				Some(match db.raw(Self::name()) {
+					Some(&Value::Boolean(true)) => $ident(true),
+					None => $ident(false),
+					_ => panic!("invalid database"),
+				})
 			}
 		}
 
@@ -90,12 +89,11 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
-				if let Some(&Value::Number(value)) = value {
-					Some($ident(value))
-				}
-				else {
-					None
+			fn lookup(db: &'a ::Database) -> Option<Self> {
+				match db.raw(Self::name()) {
+					Some(&Value::Number(num)) => Some($ident(num)),
+					None => None,
+					_ => panic!("invalid database"),
 				}
 			}
 		}
@@ -124,12 +122,11 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&'a Value>) -> Option<$ident<'a>> {
-				if let Some(&Value::String(ref value)) = value {
-					Some($ident(value))
-				}
-				else {
-					None
+			fn lookup(db: &'a ::Database) -> Option<Self> {
+				match db.raw(Self::name()) {
+					Some(&Value::String(ref s)) => Some($ident(&**s)),
+					None => None,
+					_ => panic!("invalid database"),
 				}
 			}
 		}
