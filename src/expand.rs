@@ -369,7 +369,7 @@ impl Expand for [u8] {
 						);
 					}
 
-					macro_rules! fill {
+					macro_rules! f {
 						(by $length:expr) => (
 							for _ in 0 .. p.flags.width - $length {
 								output.write_all(if p.flags.space { b" " } else { b"0" })?;
@@ -378,22 +378,22 @@ impl Expand for [u8] {
 
 						(before by $length:expr) => (
 							if !p.flags.left && p.flags.width > $length {
-								fill!(by $length);
+								f!(by $length);
 							}
 						);
 
 						(after by $length:expr) => (
 							if p.flags.left && p.flags.width > $length {
-								fill!(by $length);
+								f!(by $length);
 							}
 						);
 
 						(before $value:expr) => (
-							fill!(before by length($value, &p));
+							f!(before by length($value, &p));
 						);
 
 						(after $value:expr) => (
-							fill!(after by length($value, &p));
+							f!(after by length($value, &p));
 						);
 					}
 
@@ -405,9 +405,9 @@ impl Expand for [u8] {
 								value = &value[.. p.flags.precision];
 							}
 
-							fill!(before by value.len());
+							f!(before by value.len());
 							w!(value);
-							fill!(after by value.len());
+							f!(after by value.len());
 						}
 
 						(Format::Chr, Some(Parameter::Number(value))) =>
@@ -417,7 +417,7 @@ impl Expand for [u8] {
 							w!("{}", char::from_u32(value as u32).ok_or(error::Expand::TypeMismatch)?),
 
 						(Format::Dec, Some(Parameter::Number(value))) => {
-							fill!(before value);
+							f!(before value);
 
 							if p.flags.sign && value >= 0 {
 								w!(b"+");
@@ -425,11 +425,11 @@ impl Expand for [u8] {
 
 							w!("{:.1$}", value, p.flags.precision);
 
-							fill!(after value);
+							f!(after value);
 						}
 
 						(Format::Oct, Some(Parameter::Number(value))) => {
-							fill!(before value);
+							f!(before value);
 
 							if p.flags.alternate {
 								w!(b"0");
@@ -437,11 +437,11 @@ impl Expand for [u8] {
 
 							w!("{:.1$o}", value, p.flags.precision);
 
-							fill!(after value);
+							f!(after value);
 						}
 
 						(Format::Hex, Some(Parameter::Number(value))) => {
-							fill!(before value);
+							f!(before value);
 
 							if p.flags.alternate {
 								w!(b"0x");
@@ -449,11 +449,11 @@ impl Expand for [u8] {
 
 							w!("{:.1$x}", value, p.flags.precision);
 
-							fill!(after value);
+							f!(after value);
 						}
 
 						(Format::HEX, Some(Parameter::Number(value))) => {
-							fill!(before value);
+							f!(before value);
 
 							if p.flags.alternate {
 								w!(b"0X");
@@ -461,7 +461,7 @@ impl Expand for [u8] {
 
 							w!("{:.1$X}", value, p.flags.precision);
 
-							fill!(after value);
+							f!(after value);
 						}
 
 						(_, Some(_)) =>
