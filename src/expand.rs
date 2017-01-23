@@ -70,6 +70,18 @@ impl From<i32> for Parameter {
 	}
 }
 
+impl From<String> for Parameter {
+	fn from(value: String) -> Self {
+		Parameter::String(value.into())
+	}
+}
+
+impl<'a> From<&'a str> for Parameter {
+	fn from(value: &'a str) -> Self {
+		Parameter::String(value.into())
+	}
+}
+
 impl From<Vec<u8>> for Parameter {
 	fn from(value: Vec<u8>) -> Self {
 		Parameter::String(value.into())
