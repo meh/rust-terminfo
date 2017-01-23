@@ -72,9 +72,9 @@ macro_rules! define {
 			}
 		}
 
-		impl Into<bool> for $ident {
-			fn into(self) -> bool {
-				self.0
+		impl From<$ident> for bool {
+			fn from(cap: $ident) -> bool {
+				cap.0
 			}
 		}
 	);
@@ -100,9 +100,9 @@ macro_rules! define {
 			}
 		}
 
-		impl Into<i16> for $ident {
-			fn into(self) -> i16 {
-				self.0
+		impl From<$ident> for i16 {
+			fn from(cap: $ident) -> i16 {
+				cap.0
 			}
 		}
 	);
