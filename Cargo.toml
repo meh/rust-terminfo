@@ -8,6 +8,7 @@ license = "WTFPL"
 description = "Terminal information."
 repository  = "https://github.com/meh/rust-terminfo"
 keywords    = ["terminal", "terminfo", "termcap", "term"]
+categories  = ["command-line-interface"]
 
 build = "build.rs"
 
