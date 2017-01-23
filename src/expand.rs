@@ -156,6 +156,7 @@ impl Expand for [u8] {
 		let mut params: [Parameter; 9] = Default::default();
 		let mut stack                  = Vec::new();
 		let mut conditional            = false;
+		let mut incremented            = false;
 
 		for (dest, source) in params.iter_mut().zip(parameters.iter()) {
 			*dest = source.clone();
@@ -296,7 +297,9 @@ impl Expand for [u8] {
 					}
 				}
 
-				Item::Operation(Operation::Increment) => {
+				Item::Operation(Operation::Increment) if !incremented => {
+					incremented = true;
+
 					if let (&Parameter::Number(x), &Parameter::Number(y)) = (&params[0], &params[1]) {
 						params[0] = Parameter::Number(x + 1);
 						params[1] = Parameter::Number(y + 1);
@@ -305,6 +308,8 @@ impl Expand for [u8] {
 						return Err(error::Expand::TypeMismatch.into());
 					}
 				}
+
+				Item::Operation(Operation::Increment) => (),
 
 				Item::Operation(Operation::Binary(operation)) => {
 					match (stack.pop(), stack.pop()) {
