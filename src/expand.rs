@@ -136,7 +136,7 @@ impl Expand for [u8] {
 			);
 		}
 
-		while !input.is_empty() {
+		'main: while !input.is_empty() {
 			match next!() {
 				Item::Conditional(Conditional::If) => {
 					conditional = true;
@@ -155,7 +155,7 @@ impl Expand for [u8] {
 								match next!() {
 									Item::Conditional(Conditional::End) |
 									Item::Conditional(Conditional::Else) if level == 0 =>
-										break,
+										continue 'main,
 
 									Item::Conditional(Conditional::If) =>
 										level += 1,
@@ -169,6 +169,8 @@ impl Expand for [u8] {
 									_ => (),
 								}
 							}
+
+							return Err(error::Expand::Invalid.into());
 						}
 
 						Some(_) =>
@@ -185,7 +187,7 @@ impl Expand for [u8] {
 					while !input.is_empty() {
 						match next!() {
 							Item::Conditional(Conditional::End) if level == 0 =>
-								break,
+								continue 'main,
 
 							Item::Conditional(Conditional::If) =>
 								level += 1,
@@ -199,6 +201,8 @@ impl Expand for [u8] {
 							_ => (),
 						}
 					}
+
+					return Err(error::Expand::Invalid.into());
 				}
 
 				Item::Conditional(..) =>
