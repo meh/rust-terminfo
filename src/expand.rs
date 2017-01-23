@@ -163,9 +163,6 @@ impl Expand for [u8] {
 									Item::Conditional(Conditional::End) =>
 										level -= 1,
 
-									Item::Conditional(..) =>
-										return Err(error::Expand::Invalid.into()),
-
 									_ => (),
 								}
 							}
@@ -194,9 +191,6 @@ impl Expand for [u8] {
 
 							Item::Conditional(Conditional::End) =>
 								level -= 1,
-
-							Item::Conditional(..) =>
-								return Err(error::Expand::Invalid.into()),
 
 							_ => (),
 						}
