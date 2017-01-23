@@ -68,6 +68,46 @@ pub struct Context {
 	pub dynamic: [Parameter; 26],
 }
 
+/// Expand a parametrized string.
+///
+/// ## Examples
+///
+/// Write the expansion to `stdout`.
+///
+/// ```
+/// # #[macro_use] extern crate terminfo;
+///
+/// use terminfo::{Database, capability as cap};
+/// use std::io;
+///
+/// # fn main() {
+///
+/// let info = Database::from_env().unwrap();
+///
+/// // Move the cursor to X: 20, Y: 30
+/// expand!(io::stdout(), info.get::<cap::CursorAddress>().unwrap(); 20, 30).unwrap();
+///
+/// # }
+/// ```
+///
+/// Load the expansion for later usage.
+///
+/// ```
+/// # #[macro_use] extern crate terminfo;
+///
+/// use terminfo::{Database, capability as cap};
+/// use std::io;
+///
+/// # fn main() {
+///
+/// let info = Database::from_env().unwrap();
+///
+/// // Set foreground color to red.
+/// let red     = expand!(info.get::<cap::SetAForeground>().unwrap(); 1).unwrap();
+/// let on_blue = expand!(info.get::<cap::SetABackground>().unwrap(); 4).unwrap();
+///
+/// # }
+/// ```
 #[macro_export]
 macro_rules! expand {
 	($value:expr) => (
