@@ -40,6 +40,30 @@ impl Default for Parameter {
 	}
 }
 
+impl From<u8> for Parameter {
+	fn from(value: u8) -> Self {
+		Parameter::Number(value as i32)
+	}
+}
+
+impl From<i8> for Parameter {
+	fn from(value: i8) -> Self {
+		Parameter::Number(value as i32)
+	}
+}
+
+impl From<u16> for Parameter {
+	fn from(value: u16) -> Self {
+		Parameter::Number(value as i32)
+	}
+}
+
+impl From<i16> for Parameter {
+	fn from(value: i16) -> Self {
+		Parameter::Number(value as i32)
+	}
+}
+
 impl From<i32> for Parameter {
 	fn from(value: i32) -> Self {
 		Parameter::Number(value)
