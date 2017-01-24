@@ -643,3 +643,20 @@ define!(string AcsPlus => "acs_plus");
 define!(string MemoryLock => "memory_lock");
 define!(string MemoryUnlock => "memory_unlock");
 define!(string BoxChars1 => "box_chars_1");
+
+// Extended capabilities from screen.
+define!(boolean XTermTitle => "XT");
+define!(boolean BrightAttribute => "AX");
+define!(boolean XTermMouse => "XM");
+
+// Extended capabilities from tmux.
+define!(boolean TrueColor => "Tc");
+define!(string SetClipboard => "Ms");
+define!(string SetCursorStyle => "Ss");
+define!(string ResetCursorStyle => "Se");
+
+// True color extended capabilities from vim.
+define!(string SetTrueColorForeground => "8f");
+define!(string SetTrueColorBackground => "8b");
+define!(string ResetCursorColor => "Cr");
+define!(string SetCursorColor => "Cs");
