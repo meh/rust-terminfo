@@ -27,6 +27,9 @@ pub trait Capability<'a>: Sized {
 
 	/// Parse the capability from its raw value.
 	fn from(value: Option<&'a Value>) -> Option<Self>;
+
+	/// Convert the capability into its raw value.
+	fn into(self) -> Option<Value>;
 }
 
 /// Possible value types for capabilities.
@@ -73,6 +76,16 @@ macro_rules! define {
 					Some($ident(false))
 				}
 			}
+
+			#[inline]
+			fn into(self) -> Option<Value> {
+				if self.0 {
+					Some(Value::True)
+				}
+				else {
+					None
+				}
+			}
 		}
 
 		impl Into<bool> for $ident {
@@ -101,6 +114,11 @@ macro_rules! define {
 					None
 				}
 			}
+
+			#[inline]
+			fn into(self) -> Option<Value> {
+				Some(Value::Number(self.0))
+			}
 		}
 
 		impl Into<i16> for $ident {
@@ -128,6 +146,17 @@ macro_rules! define {
 				else {
 					None
 				}
+			}
+
+			#[inline]
+			fn into(self) -> Option<Value> {
+				Some(Value::String(match self.0 {
+					Cow::Borrowed(value) =>
+						value.into(),
+
+					Cow::Owned(value) =>
+						value
+				}))
 			}
 		}
 
