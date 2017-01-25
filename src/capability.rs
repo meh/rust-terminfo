@@ -15,6 +15,7 @@
 ///! Standard capabilities.
 
 use std::io::Write;
+use std::borrow::Cow;
 
 use expand::{Expand, Parameter, Context};
 use error;
@@ -25,7 +26,7 @@ pub trait Capability<'a>: Sized {
 	fn name() -> &'static str;
 
 	/// Parse the capability from its raw value.
-	fn parse(value: Option<&'a Value>) -> Option<Self>;
+	fn from(value: Option<&'a Value>) -> Option<Self>;
 }
 
 /// Possible value types for capabilities.
@@ -64,7 +65,7 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
+			fn from(value: Option<&Value>) -> Option<Self> {
 				if let Some(&Value::True) = value {
 					Some($ident(true))
 				}
@@ -92,7 +93,7 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&Value>) -> Option<Self> {
+			fn from(value: Option<&Value>) -> Option<Self> {
 				if let Some(&Value::Number(value)) = value {
 					Some($ident(value))
 				}
@@ -110,14 +111,8 @@ macro_rules! define {
 	);
 
 	(string $ident:ident => $name:expr) => (
-		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-		pub struct $ident<'a>(&'a [u8]);
-
-		impl<'a> AsRef<[u8]> for $ident<'a> {
-			fn as_ref(&self) -> &[u8] {
-				self.0
-			}
-		}
+		#[derive(Eq, PartialEq, Clone, Debug)]
+		pub struct $ident<'a>(Cow<'a, [u8]>);
 
 		impl<'a> Capability<'a> for $ident<'a> {
 			#[inline]
@@ -126,13 +121,25 @@ macro_rules! define {
 			}
 
 			#[inline]
-			fn parse(value: Option<&'a Value>) -> Option<$ident<'a>> {
+			fn from(value: Option<&'a Value>) -> Option<$ident<'a>> {
 				if let Some(&Value::String(ref value)) = value {
-					Some($ident(value))
+					Some($ident(Cow::Borrowed(value)))
 				}
 				else {
 					None
 				}
+			}
+		}
+
+		impl<'a, T: AsRef<&'a [u8]>> From<T> for $ident<'a> {
+			fn from(value: T) -> Self {
+				$ident(Cow::Borrowed(value.as_ref()))
+			}
+		}
+
+		impl<'a> AsRef<[u8]> for $ident<'a> {
+			fn as_ref(&self) -> &[u8] {
+				&self.0
 			}
 		}
 
