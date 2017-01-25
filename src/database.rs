@@ -12,11 +12,13 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::collections::HashMap;
 use std::env;
 use std::path::{Path, PathBuf};
 use std::fs::{self, File};
 use std::io::Read;
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use fnv::FnvHasher;
 
 use capability::{Capability, Value};
 use names;
@@ -25,18 +27,18 @@ use nom::IResult;
 use parser::compiled;
 
 /// A capability database.
-#[derive(Eq, PartialEq, Clone, Debug, Default)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Database {
 	name:        String,
 	aliases:     Vec<String>,
 	description: String,
 
-	inner: HashMap<String, Value>,
+	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
 }
 
 impl Database {
-	/// Create a new database from the given values.
-	pub fn new(name: String, aliases: Vec<String>, description: String, inner: HashMap<String, Value>) -> Self {
+	/// Load a new database from the given values.
+	pub fn from(name: String, aliases: Vec<String>, description: String, inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>) -> Self {
 		Database {
 			name:        name,
 			aliases:     aliases,

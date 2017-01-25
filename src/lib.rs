@@ -15,6 +15,7 @@
 #[macro_use]
 extern crate nom;
 extern crate phf;
+extern crate fnv;
 
 mod error;
 pub use error::{Error, Result};

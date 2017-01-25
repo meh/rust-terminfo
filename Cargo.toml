@@ -15,6 +15,7 @@ build = "build.rs"
 [dependencies]
 nom = "2.0"
 phf = "0.7"
+fnv = "1.0"
 
 [build-dependencies]
 phf_codegen = "0.7"

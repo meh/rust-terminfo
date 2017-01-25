@@ -14,6 +14,8 @@
 
 use std::str;
 use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use fnv::FnvHasher;
 
 use nom::le_i16;
 use names;
@@ -37,7 +39,7 @@ impl<'a> Into<::Database> for Database<'a> {
 		let description = names.pop().unwrap().to_string();
 		let aliases     = names.iter().map(|s| s.to_string()).collect();
 
-		let mut capabilities = HashMap::new();
+		let mut capabilities = HashMap::<String, Value, BuildHasherDefault<FnvHasher>>::default();
 
 		for (index, _) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
@@ -88,7 +90,7 @@ impl<'a> Into<::Database> for Database<'a> {
 			}
 		}
 
-		::Database::new(name, aliases, description, capabilities)
+		::Database::from(name, aliases, description, capabilities)
 	}
 }
 
