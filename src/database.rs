@@ -32,35 +32,90 @@ pub struct Database {
 	name:        String,
 	aliases:     Vec<String>,
 	description: String,
+	inner:       HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
+}
 
-	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
+#[derive(Default, Debug)]
+pub struct Builder {
+	name:        Option<String>,
+	aliases:     Vec<String>,
+	description: Option<String>,
+	inner:       HashMap<String, Value, BuildHasherDefault<FnvHasher>>
+}
+
+impl Builder {
+	/// Build the database.
+	pub fn build(self) -> Result<Database, ()> {
+		Ok(Database {
+			name:        self.name.ok_or(())?,
+			aliases:     self.aliases,
+			description: self.description.ok_or(())?,
+			inner:       self.inner,
+		})
+	}
+
+	/// Set the terminal name.
+	pub fn name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+		self.name = Some(name.into());
+		self
+	}
+
+	/// Set the terminal aliases.
+	pub fn aliases<T, I>(&mut self, iter: I) -> &mut Self
+		where T: Into<String>,
+		      I: IntoIterator<Item = T>,
+	{
+		self.aliases = iter.into_iter().map(|a| a.into()).collect();
+		self
+	}
+
+	/// Set the terminal description.
+	pub fn description<T: Into<String>>(&mut self, description: T) -> &mut Self {
+		self.description = Some(description.into());
+		self
+	}
+
+	/// Set a capability.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// use terminfo::{Database, capability as cap};
+	///
+	/// let mut info = Database::new();
+	///
+	/// info.name("foo");
+	/// info.description("foo terminal");
+	/// info.set(cap::MaxColors(16));
+	///
+	/// info.build().unwrap();
+	/// ```
+	pub fn set<'a, C: Capability<'a>>(&'a mut self, value: C) -> &mut Self {
+		if !self.inner.contains_key(C::name()) {
+			if let Some(value) = C::into(value) {
+				self.inner.insert(C::name().into(), value);
+			}
+		}
+
+		self
+	}
+
+	pub fn raw<S: AsRef<str>>(&mut self, name: S, value: Value) -> &mut Self {
+		let name = name.as_ref();
+		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
+
+		if !self.inner.contains_key(name) {
+			self.inner.insert(name.into(), value);
+		}
+
+		self
+	}
 }
 
 impl Database {
 	/// Create a new empty database.
-	pub fn new<N, A, D>(name: N, aliases: Vec<A>, description: D) -> Self
-		where N: Into<String>,
-		      A: Into<String>,
-		      D: Into<String>,
-	{
-		Database {
-			name:        name.into(),
-			aliases:     aliases.into_iter().map(|a| a.into()).collect(),
-			description: description.into(),
-
-			inner: Default::default(),
-		}
-	}
-
-	/// Load a new database from the given values.
-	pub fn from(name: String, aliases: Vec<String>, description: String, inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>) -> Self {
-		Database {
-			name:        name,
-			aliases:     aliases,
-			description: description,
-
-			inner: inner,
-		}
+	pub fn new() -> Builder {
+		Builder::default()
 	}
 
 	/// Load a database from the current environment.
@@ -185,22 +240,6 @@ impl Database {
 		C::from(self.inner.get(C::name()))
 	}
 
-	/// Set a capability.
-	///
-	/// ## Example
-	///
-	/// ```
-	/// use terminfo::{Database, capability as cap};
-	///
-	/// let mut info = Database::new("foo", vec![], "foo terminal");
-	/// info.set(cap::MaxColors(16));
-	/// ```
-	pub fn set<'a, C: Capability<'a>>(&'a mut self, value: C) {
-		if let Some(value) = C::into(value) {
-			self.inner.insert(C::name().into(), value);
-		}
-	}
-
 	/// Get a capability by name.
 	///
 	/// ## Note
@@ -221,12 +260,5 @@ impl Database {
 		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
 
 		self.inner.get(name)
-	}
-
-	pub fn set_raw<S: AsRef<str>>(&mut self, name: S, value: Value) {
-		let name = name.as_ref();
-		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
-
-		self.inner.insert(name.into(), value);
 	}
 }

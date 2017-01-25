@@ -13,11 +13,8 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::str;
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use fnv::FnvHasher;
-
 use nom::le_i16;
+
 use names;
 use capability::Value;
 
@@ -35,23 +32,24 @@ impl<'a> Into<::Database> for Database<'a> {
 			.map(|s| s.trim())
 			.collect::<Vec<_>>();
 
-		let name        = names.remove(0).to_string();
-		let description = names.pop().unwrap().to_string();
-		let aliases     = names.iter().map(|s| s.to_string()).collect();
+		let mut database = ::Database::new();
 
-		let mut capabilities = HashMap::<String, Value, BuildHasherDefault<FnvHasher>>::default();
+		database
+			.name(names.remove(0))
+			.description(names.pop().unwrap())
+			.aliases(names);
 
 		for (index, _) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
-				capabilities.entry(name.into())
-					.or_insert(Value::True);
+				database.raw(name,
+					Value::True);
 			}
 		}
 
 		for (index, &value) in self.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
 			if let Some(&name) = names::NUMBER.get(&(index as u16)) {
-				capabilities.entry(name.into())
-					.or_insert(Value::Number(value));
+				database.raw(name,
+					Value::Number(value));
 			}
 		}
 
@@ -60,8 +58,8 @@ impl<'a> Into<::Database> for Database<'a> {
 				let string = &self.standard.table[offset as usize ..];
 				let edge   = string.iter().position(|&c| c == 0).unwrap();
 
-				capabilities.entry(name.into())
-					.or_insert(Value::String(Vec::from(&string[.. edge])));
+				database.raw(name,
+					Value::String(Vec::from(&string[.. edge])));
 			}
 		}
 
@@ -72,25 +70,25 @@ impl<'a> Into<::Database> for Database<'a> {
 				.collect::<Vec<_>>();
 
 			for (index, _) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value)  {
-				capabilities.entry(names[index].into())
-					.or_insert(Value::True);
+				database.raw(names[index],
+					Value::True);
 			}
 
 			for (index, &value) in extended.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-				capabilities.entry(names[extended.booleans.len() + index].into())
-					.or_insert(Value::Number(value));
+				database.raw(names[extended.booleans.len() + index],
+					Value::Number(value));
 			}
 
 			for (index, &offset) in extended.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
 				let string = &extended.table[offset as usize ..];
 				let edge   = string.iter().position(|&c| c == 0).unwrap();
 
-				capabilities.entry(names[extended.booleans.len() + extended.numbers.len() + index].into())
-					.or_insert(Value::String(Vec::from(&string[.. edge])));
+				database.raw(names[extended.booleans.len() + extended.numbers.len() + index],
+					Value::String(Vec::from(&string[.. edge])));
 			}
 		}
 
-		::Database::from(name, aliases, description, capabilities)
+		database.build().unwrap()
 	}
 }
 
