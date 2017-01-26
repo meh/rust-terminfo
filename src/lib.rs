@@ -20,15 +20,18 @@ extern crate fnv;
 mod error;
 pub use error::{Error, Result};
 
-mod names;
-mod parser;
-
-pub mod capability;
-pub use capability::{Capability, Value};
+/// Parsers for various formats.
+pub mod parser;
 
 #[macro_use]
 mod expand;
 pub use expand::{Expand, Parameter};
 
+pub mod capability;
+pub use capability::{Capability, Value};
+
 mod database;
 pub use database::Database;
+
+/// Constants to deal with name differences across terminfo and termcap.
+pub mod names;
