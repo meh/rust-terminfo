@@ -57,14 +57,14 @@ impl Expand for Value {
 }
 
 macro_rules! define {
-	(boolean $ident:ident => $name:expr) => (
+	(boolean $ident:ident => $capability:expr) => (
 		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 		pub struct $ident(pub bool);
 
 		impl<'a> Capability<'a> for $ident {
 			#[inline]
 			fn name() -> &'static str {
-				$name
+				$capability
 			}
 
 			#[inline]
@@ -95,14 +95,14 @@ macro_rules! define {
 		}
 	);
 
-	(number $ident:ident => $name:expr) => (
+	(number $ident:ident => $capability:expr) => (
 		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 		pub struct $ident(pub i16);
 
 		impl<'a> Capability<'a> for $ident {
 			#[inline]
 			fn name() -> &'static str {
-				$name
+				$capability
 			}
 
 			#[inline]
@@ -128,14 +128,14 @@ macro_rules! define {
 		}
 	);
 
-	(string $ident:ident => $name:expr) => (
+	(string $ident:ident => $capability:expr) => (
 		#[derive(Eq, PartialEq, Clone, Debug)]
 		pub struct $ident<'a>(Cow<'a, [u8]>);
 
 		impl<'a> Capability<'a> for $ident<'a> {
 			#[inline]
 			fn name() -> &'static str {
-				$name
+				$capability
 			}
 
 			#[inline]
