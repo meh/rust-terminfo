@@ -18,16 +18,28 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
+	/// IO error.
 	Io(io::Error),
+
+	/// Database not found.
 	NotFound,
+
+	/// Parsing error.
 	Parse,
+
+	/// Expansion error.
 	Expand(Expand),
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Expand {
+	/// The expansion string is invalid.
 	Invalid,
+
+	/// There was a type mismatch while expanding.
 	TypeMismatch,
+
+	/// The stack underflowed while expanding.
 	StackUnderflow,
 }
 
