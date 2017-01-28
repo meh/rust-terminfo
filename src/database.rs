@@ -35,6 +35,7 @@ pub struct Database {
 	inner:       HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
 }
 
+/// Builder for a new `Database`.
 #[derive(Default, Debug)]
 pub struct Builder {
 	name:        Option<String>,
@@ -83,9 +84,10 @@ impl Builder {
 	/// use terminfo::{Database, capability as cap};
 	///
 	/// let mut info = Database::new();
-	///
 	/// info.name("foo");
 	/// info.description("foo terminal");
+	///
+	/// // Set the amount of available colors.
 	/// info.set(cap::MaxColors(16));
 	///
 	/// info.build().unwrap();
@@ -100,12 +102,28 @@ impl Builder {
 		self
 	}
 
-	pub fn raw<S: AsRef<str>>(&mut self, name: S, value: Value) -> &mut Self {
+	/// Set a raw capability.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// use terminfo::{Database, capability as cap};
+	///
+	/// let mut info = Database::new();
+	/// info.name("foo");
+	/// info.description("foo terminal");
+	///
+	/// // Set the amount of available colors.
+	/// info.raw("colors", 16);
+	///
+	/// info.build().unwrap();
+	/// ```
+	pub fn raw<S: AsRef<str>, V: Into<Value>>(&mut self, name: S, value: V) -> &mut Self {
 		let name = name.as_ref();
 		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
 
 		if !self.inner.contains_key(name) {
-			self.inner.insert(name.into(), value);
+			self.inner.insert(name.into(), value.into());
 		}
 
 		self
