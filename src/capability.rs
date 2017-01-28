@@ -45,6 +45,50 @@ pub enum Value {
 	String(Vec<u8>),
 }
 
+macro_rules! from {
+	(number $ty:ty) => (
+		impl From<$ty> for Value {
+			fn from(value: $ty) -> Self {
+				Value::Number(value as i16)
+			}
+		}
+	);
+
+	(string ref $ty:ty) => (
+		impl<'a> From<&'a $ty> for Value {
+			fn from(value: &'a $ty) -> Self {
+				Value::String(value.into())
+			}
+		}
+	);
+
+	(string $ty:ty) => (
+		impl From<$ty> for Value {
+			fn from(value: $ty) -> Self {
+				Value::String(value.into())
+			}
+		}
+	);
+}
+
+impl From<()> for Value {
+	fn from(_: ()) -> Self {
+		Value::True
+	}
+}
+
+from!(number u8);
+from!(number i8);
+from!(number u16);
+from!(number i16);
+from!(number u32);
+from!(number i32);
+
+from!(string String);
+from!(string ref str);
+from!(string Vec<u8>);
+from!(string ref [u8]);
+
 impl Expand for Value {
 	fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
 		if let &Value::String(ref buffer) = self {
