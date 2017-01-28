@@ -40,59 +40,43 @@ impl Default for Parameter {
 	}
 }
 
-impl From<u8> for Parameter {
-	fn from(value: u8) -> Self {
-		Parameter::Number(value as i32)
-	}
+macro_rules! from {
+	(number $ty:ty) => (
+		impl From<$ty> for Parameter {
+			fn from(value: $ty) -> Self {
+				Parameter::Number(value as i32)
+			}
+		}
+	);
+
+	(string ref $ty:ty) => (
+		impl<'a> From<&'a $ty> for Parameter {
+			fn from(value: &'a $ty) -> Self {
+				Parameter::String(value.into())
+			}
+		}
+	);
+
+	(string $ty:ty) => (
+		impl From<$ty> for Parameter {
+			fn from(value: $ty) -> Self {
+				Parameter::String(value.into())
+			}
+		}
+	);
 }
 
-impl From<i8> for Parameter {
-	fn from(value: i8) -> Self {
-		Parameter::Number(value as i32)
-	}
-}
+from!(number u8);
+from!(number i8);
+from!(number u16);
+from!(number i16);
+from!(number u32);
+from!(number i32);
 
-impl From<u16> for Parameter {
-	fn from(value: u16) -> Self {
-		Parameter::Number(value as i32)
-	}
-}
-
-impl From<i16> for Parameter {
-	fn from(value: i16) -> Self {
-		Parameter::Number(value as i32)
-	}
-}
-
-impl From<i32> for Parameter {
-	fn from(value: i32) -> Self {
-		Parameter::Number(value)
-	}
-}
-
-impl From<String> for Parameter {
-	fn from(value: String) -> Self {
-		Parameter::String(value.into())
-	}
-}
-
-impl<'a> From<&'a str> for Parameter {
-	fn from(value: &'a str) -> Self {
-		Parameter::String(value.into())
-	}
-}
-
-impl From<Vec<u8>> for Parameter {
-	fn from(value: Vec<u8>) -> Self {
-		Parameter::String(value.into())
-	}
-}
-
-impl<'a> From<&'a [u8]> for Parameter {
-	fn from(value: &'a [u8]) -> Self {
-		Parameter::String(value.into())
-	}
-}
+from!(string String);
+from!(string ref str);
+from!(string Vec<u8>);
+from!(string ref [u8]);
 
 /// The expansion context.
 ///
