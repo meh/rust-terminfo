@@ -822,7 +822,6 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 	("parm_delete_line", "DL"),
 	("parm_down_cursor", "DO"),
 	("parm_down_micro", "Zf"),
-	("parm_ich", "IC"),
 	("parm_index", "SF"),
 	("parm_insert_line", "AL"),
 	("parm_left_cursor", "LE"),
@@ -875,7 +874,6 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 	("set_foreground", "Sf"),
 	("set_left_margin", "ML"),
 	("set_left_margin_parm", "Zm"),
-	("set_lr_margin", "ML"),
 	("set_page_length", "YZ"),
 	("set_pglen_inch", "YI"),
 	("set_right_margin", "MR"),
@@ -987,7 +985,9 @@ fn main() {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
 	for &(value, name) in TERMCAP {
-		builder.entry(name, &format!("\"{}\"", value));
+		if TERMINFO.iter().find(|entry| name == entry.1).is_none() {
+			builder.entry(name, &format!("\"{}\"", value));
+		}
 	}
 	builder.build(&mut file).unwrap();
 	write!(&mut file, ";\n").unwrap();
