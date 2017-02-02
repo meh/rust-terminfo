@@ -66,6 +66,7 @@ macro_rules! from {
 	);
 }
 
+from!(number bool);
 from!(number u8);
 from!(number i8);
 from!(number u16);
