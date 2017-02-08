@@ -15,14 +15,14 @@ fn main() {
   }
 
   if let Some(flash) = info.get::<cap::FlashScreen>() {
-		expand!(io::stdout(), flash).unwrap();
+		flash.expand().to(io::stdout()).unwrap();
   }
 	else {
 		println!("FLASH GORDON!");
 	}
 
-	expand!(io::stdout(), info.get::<cap::SetAForeground>().unwrap(); 1).unwrap();
-	expand!(io::stdout(), info.get::<cap::SetABackground>().unwrap(); 4).unwrap();
+	info.get::<cap::SetAForeground>().unwrap().expand(1).to(io::stdout()).unwrap();
+	info.get::<cap::SetABackground>().unwrap().expand(4).to(io::stdout()).unwrap();
 	println!("SUP");
-	expand!(io::stdout(), info.get::<cap::ExitAttributeMode>().unwrap()).unwrap();
+	info.get::<cap::ExitAttributeMode>().unwrap().expand().to(io::stdout()).unwrap();
 }

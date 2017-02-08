@@ -106,7 +106,7 @@ pub struct Context {
 /// let info = Database::from_env().unwrap();
 ///
 /// // Move the cursor to X: 20, Y: 30
-/// expand!(io::stdout(), info.get::<cap::CursorAddress>().unwrap(); 20, 30).unwrap();
+/// expand!(io::stdout(), info.get::<cap::CursorAddress>().unwrap().as_ref(); 20, 30).unwrap();
 ///
 /// # }
 /// ```
@@ -124,8 +124,8 @@ pub struct Context {
 /// let info = Database::from_env().unwrap();
 ///
 /// // Set foreground color to red.
-/// let red     = expand!(info.get::<cap::SetAForeground>().unwrap(); 1).unwrap();
-/// let on_blue = expand!(info.get::<cap::SetABackground>().unwrap(); 4).unwrap();
+/// let red     = expand!(info.get::<cap::SetAForeground>().unwrap().as_ref(); 1).unwrap();
+/// let on_blue = expand!(info.get::<cap::SetABackground>().unwrap().as_ref(); 4).unwrap();
 ///
 /// # }
 /// ```

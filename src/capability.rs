@@ -15,7 +15,7 @@
 ///! Standard capabilities.
 
 use std::io::Write;
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 
 use expand::{Expand, Parameter, Context};
 use error;
@@ -43,6 +43,31 @@ pub enum Value {
 
 	/// An ASCII string requiring expansion.
 	String(Vec<u8>),
+}
+
+#[derive(Debug)]
+pub struct Expansion<'a> {
+	string:  &'a [u8],
+	params:  [Parameter; 9],
+	context: Option<&'a mut Context>,
+}
+
+impl<'a> Expansion<'a> {
+	pub fn with<'c: 'a>(mut self, context: &'c mut Context) -> Self {
+		self.context = Some(context);
+		self
+	}
+
+	pub fn to<W: Write>(self, output: W) -> error::Result<()> {
+		self.string.expand(output, &self.params,
+			self.context.unwrap_or(&mut Default::default()))
+	}
+
+	pub fn to_vec(self) -> error::Result<Vec<u8>> {
+		let mut result = Vec::with_capacity(self.string.len());
+		self.to(&mut result)?;
+		Ok(result)
+	}
 }
 
 macro_rules! from {
@@ -88,17 +113,6 @@ from!(string String);
 from!(string ref str);
 from!(string Vec<u8>);
 from!(string ref [u8]);
-
-impl Expand for Value {
-	fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
-		if let &Value::String(ref buffer) = self {
-			buffer.expand(output, parameters, context)
-		}
-		else {
-			Err(error::Expand::TypeMismatch.into())
-		}
-	}
-}
 
 macro_rules! define {
 	(boolean $ident:ident => $capability:expr) => (
@@ -172,7 +186,7 @@ macro_rules! define {
 		}
 	);
 
-	(string $ident:ident => $capability:expr) => (
+	(string define $ident:ident => $capability:expr) => (
 		#[derive(Eq, PartialEq, Clone, Debug)]
 		pub struct $ident<'a>(Cow<'a, [u8]>);
 
@@ -215,12 +229,55 @@ macro_rules! define {
 				&self.0
 			}
 		}
+	);
 
-		impl<'a> Expand for $ident<'a> {
-			fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
-				self.0.expand(output, parameters, context)
+	(string $ident:ident => $capability:expr) => (
+		define!(string define $ident => $capability);
+
+		impl<'a> $ident<'a> {
+			pub fn expand(&self) -> Expansion {
+				Expansion {
+					string:  self.0.borrow(),
+					params:  Default::default(),
+					context: None,
+				}
 			}
 		}
+	);
+
+	(string $ident:ident => $capability:expr; $($name:ident : $ty:ty),+) => (
+		define!(string define $ident => $capability);
+
+		impl<'a> $ident<'a> {
+			#[allow(unused_assignments)]
+			pub fn expand(&self, $($name: $ty),*) -> Expansion {
+				let mut params: [Parameter; 9] = Default::default();
+				let mut index = 0;
+
+				$({
+					params[index]  = $name.into();
+					index         += 1;
+				})*;
+
+				Expansion {
+					string:  self.0.borrow(),
+					params:  params,
+					context: None,
+				}
+			}
+		}
+	);
+
+	(count items $($item:tt),*) => (
+		define!(count 0; $($item),*);
+	);
+
+	(count $current:expr; $item:tt, $($rest:tt),*) => (
+		define!(count $current + 1; $($rest),*);
+	);
+
+	(count $current:expr) => (
+		$current
 	);
 }
 
@@ -312,14 +369,11 @@ define!(number NumberOfFunctionKeys => "number_of_function_keys");
 define!(string BackTab => "back_tab");
 define!(string Bell => "bell");
 define!(string CarriageReturn => "carriage_return");
-define!(string ChangeScrollRegion => "change_scroll_region");
 define!(string ClearAllTabs => "clear_all_tabs");
 define!(string ClearScreen => "clear_screen");
 define!(string ClrEol => "clr_eol");
 define!(string ClrEos => "clr_eos");
-define!(string ColumnAddress => "column_address");
 define!(string CommandCharacter => "command_character");
-define!(string CursorAddress => "cursor_address");
 define!(string CursorDown => "cursor_down");
 define!(string CursorHome => "cursor_home");
 define!(string CursorInvisible => "cursor_invisible");
@@ -346,7 +400,6 @@ define!(string EnterProtectedMode => "enter_protected_mode");
 define!(string EnterReverseMode => "enter_reverse_mode");
 define!(string EnterStandoutMode => "enter_standout_mode");
 define!(string EnterUnderlineMode => "enter_underline_mode");
-define!(string EraseChars => "erase_chars");
 define!(string ExitAltCharsetMode => "exit_alt_charset_mode");
 define!(string ExitAttributeMode => "exit_attribute_mode");
 define!(string ExitCaMode => "exit_ca_mode");
@@ -414,16 +467,6 @@ define!(string MetaOff => "meta_off");
 define!(string MetaOn => "meta_on");
 define!(string Newline => "newline");
 define!(string PadChar => "pad_char");
-define!(string ParmDch => "parm_dch");
-define!(string ParmDeleteLine => "parm_delete_line");
-define!(string ParmDownCursor => "parm_down_cursor");
-define!(string ParmIch => "parm_ich");
-define!(string ParmIndex => "parm_index");
-define!(string ParmInsertLine => "parm_insert_line");
-define!(string ParmLeftCursor => "parm_left_cursor");
-define!(string ParmRightCursor => "parm_right_cursor");
-define!(string ParmRindex => "parm_rindex");
-define!(string ParmUpCursor => "parm_up_cursor");
 define!(string PkeyKey => "pkey_key");
 define!(string PkeyLocal => "pkey_local");
 define!(string PkeyXmit => "pkey_xmit");
@@ -436,7 +479,6 @@ define!(string Reset2String => "reset_2string");
 define!(string Reset3String => "reset_3string");
 define!(string ResetFile => "reset_file");
 define!(string RestoreCursor => "restore_cursor");
-define!(string RowAddress => "row_address");
 define!(string SaveCursor => "save_cursor");
 define!(string ScrollForward => "scroll_forward");
 define!(string ScrollReverse => "scroll_reverse");
@@ -611,8 +653,6 @@ define!(string OrigColors => "orig_colors");
 define!(string InitializeColor => "initialize_color");
 define!(string InitializePair => "initialize_pair");
 define!(string SetColorPair => "set_color_pair");
-define!(string SetForeground => "set_foreground");
-define!(string SetBackground => "set_background");
 define!(string ChangeCharPitch => "change_char_pitch");
 define!(string ChangeLinePitch => "change_line_pitch");
 define!(string ChangeResHorz => "change_res_horz");
@@ -644,10 +684,6 @@ define!(string MicroRight => "micro_right");
 define!(string MicroRowAddress => "micro_row_address");
 define!(string MicroUp => "micro_up");
 define!(string OrderOfPins => "order_of_pins");
-define!(string ParmDownMicro => "parm_down_micro");
-define!(string ParmLeftMicro => "parm_left_micro");
-define!(string ParmRightMicro => "parm_right_micro");
-define!(string ParmUpMicro => "parm_up_micro");
 define!(string SelectCharSet => "select_char_set");
 define!(string SetBottomMargin => "set_bottom_margin");
 define!(string SetBottomMarginParm => "set_bottom_margin_parm");
@@ -668,8 +704,6 @@ define!(string KeyMouse => "key_mouse");
 define!(string MouseInfo => "mouse_info");
 define!(string ReqMousePos => "req_mouse_pos");
 define!(string GetMouse => "get_mouse");
-define!(string SetAForeground => "set_a_foreground");
-define!(string SetABackground => "set_a_background");
 define!(string PkeyPlab => "pkey_plab");
 define!(string DeviceType => "device_type");
 define!(string CodeSetInit => "code_set_init");
@@ -724,6 +758,77 @@ define!(string MemoryLock => "memory_lock");
 define!(string MemoryUnlock => "memory_unlock");
 define!(string BoxChars1 => "box_chars_1");
 
+define!(string ChangeScrollRegion => "change_scroll_region";
+	top:    i32,
+	bottom: i32);
+
+define!(string ColumnAddress => "column_address";
+	x: i32);
+
+define!(string CursorAddress => "cursor_address";
+	x: i32,
+	y: i32);
+
+define!(string EraseChars => "erase_chars";
+	count: i32);
+
+define!(string ParmDch => "parm_dch";
+	count: i32);
+
+define!(string ParmDeleteLine => "parm_delete_line";
+	count: i32);
+
+define!(string ParmDownCursor => "parm_down_cursor";
+	count: i32);
+
+define!(string ParmIch => "parm_ich";
+	count: i32);
+
+define!(string ParmIndex => "parm_index";
+	count: i32);
+
+define!(string ParmInsertLine => "parm_insert_line";
+	count: i32);
+
+define!(string ParmLeftCursor => "parm_left_cursor";
+	count: i32);
+
+define!(string ParmRightCursor => "parm_right_cursor";
+	count: i32);
+
+define!(string ParmRindex => "parm_rindex";
+	count: i32);
+
+define!(string ParmUpCursor => "parm_up_cursor";
+	count: i32);
+
+define!(string ParmDownMicro => "parm_down_micro";
+	count: i32);
+
+define!(string ParmLeftMicro => "parm_left_micro";
+	count: i32);
+
+define!(string ParmRightMicro => "parm_right_micro";
+	count: i32);
+
+define!(string ParmUpMicro => "parm_up_micro";
+	count: i32);
+
+define!(string RowAddress => "row_address";
+	y: i32);
+
+define!(string SetAForeground => "set_a_foreground";
+	color: u8);
+
+define!(string SetABackground => "set_a_background";
+	color: u8);
+
+define!(string SetForeground => "set_foreground";
+	color: u8);
+
+define!(string SetBackground => "set_background";
+	color: u8);
+
 // Extended capabilities from screen.
 define!(boolean XTermTitle => "XT");
 define!(boolean BrightAttribute => "AX");
@@ -731,12 +836,42 @@ define!(boolean XTermMouse => "XM");
 
 // Extended capabilities from tmux.
 define!(boolean TrueColor => "Tc");
-define!(string SetClipboard => "Ms");
-define!(string SetCursorStyle => "Ss");
+
+define!(string SetClipboard => "Ms";
+	selection: &str,
+	content:   &[u8]);
+
+define!(string SetCursorStyle => "Ss";
+	kind: u8);
+
 define!(string ResetCursorStyle => "Se");
 
 // True color extended capabilities from vim.
-define!(string SetTrueColorForeground => "8f");
-define!(string SetTrueColorBackground => "8b");
+define!(string SetTrueColorForeground => "8f";
+	r: u8,
+	g: u8,
+	b: u8);
+
+define!(string SetTrueColorBackground => "8b";
+	r: u8,
+	g: u8,
+	b: u8);
+
 define!(string ResetCursorColor => "Cr");
-define!(string SetCursorColor => "Cs");
+
+define!(string SetCursorColor => "Cs";
+	color: &str);
+
+#[cfg(test)]
+mod test {
+	use Database;
+	use super::*;
+
+	#[test]
+	fn cursor_address() {
+		assert_eq!(b"\x1B[3;5H".to_vec(),
+			Database::from_path("tests/cancer-256color").unwrap()
+				.get::<CursorAddress>().unwrap()
+				.expand(2, 4).to_vec().unwrap());
+	}
+}
