@@ -766,8 +766,8 @@ define!(string ColumnAddress => "column_address";
 	x: u32);
 
 define!(string CursorAddress => "cursor_address";
-	x: u32,
-	y: u32);
+	y: u32,
+	x: u32);
 
 define!(string EraseChars => "erase_chars";
 	count: u32);
