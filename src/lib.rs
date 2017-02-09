@@ -24,8 +24,8 @@ pub use error::{Error, Result};
 pub mod parser;
 
 #[macro_use]
-mod expand;
-pub use expand::{Expand, Parameter};
+pub mod expand;
+pub use expand::Expand;
 
 pub mod capability;
 pub use capability::{Capability, Value};
