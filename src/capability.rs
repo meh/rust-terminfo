@@ -759,63 +759,63 @@ define!(string MemoryUnlock => "memory_unlock");
 define!(string BoxChars1 => "box_chars_1");
 
 define!(string ChangeScrollRegion => "change_scroll_region";
-	top:    i32,
-	bottom: i32);
+	top:    u32,
+	bottom: u32);
 
 define!(string ColumnAddress => "column_address";
-	x: i32);
+	x: u32);
 
 define!(string CursorAddress => "cursor_address";
-	x: i32,
-	y: i32);
+	x: u32,
+	y: u32);
 
 define!(string EraseChars => "erase_chars";
-	count: i32);
+	count: u32);
 
 define!(string ParmDch => "parm_dch";
-	count: i32);
+	count: u32);
 
 define!(string ParmDeleteLine => "parm_delete_line";
-	count: i32);
+	count: u32);
 
 define!(string ParmDownCursor => "parm_down_cursor";
-	count: i32);
+	count: u32);
 
 define!(string ParmIch => "parm_ich";
-	count: i32);
+	count: u32);
 
 define!(string ParmIndex => "parm_index";
-	count: i32);
+	count: u32);
 
 define!(string ParmInsertLine => "parm_insert_line";
-	count: i32);
+	count: u32);
 
 define!(string ParmLeftCursor => "parm_left_cursor";
-	count: i32);
+	count: u32);
 
 define!(string ParmRightCursor => "parm_right_cursor";
-	count: i32);
+	count: u32);
 
 define!(string ParmRindex => "parm_rindex";
-	count: i32);
+	count: u32);
 
 define!(string ParmUpCursor => "parm_up_cursor";
-	count: i32);
+	count: u32);
 
 define!(string ParmDownMicro => "parm_down_micro";
-	count: i32);
+	count: u32);
 
 define!(string ParmLeftMicro => "parm_left_micro";
-	count: i32);
+	count: u32);
 
 define!(string ParmRightMicro => "parm_right_micro";
-	count: i32);
+	count: u32);
 
 define!(string ParmUpMicro => "parm_up_micro";
-	count: i32);
+	count: u32);
 
 define!(string RowAddress => "row_address";
-	y: i32);
+	y: u32);
 
 define!(string SetAForeground => "set_a_foreground";
 	color: u8);
