@@ -1,4 +1,3 @@
-#[macro_use(expand)]
 extern crate terminfo;
 
 use std::io;
