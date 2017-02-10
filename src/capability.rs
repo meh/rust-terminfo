@@ -15,7 +15,7 @@
 ///! Standard capabilities.
 
 use std::io::Write;
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 
 use expand::{Expand, Parameter, Context};
 use error;
@@ -46,25 +46,25 @@ pub enum Value {
 }
 
 #[derive(Debug)]
-pub struct Expansion<'a> {
-	string:  &'a [u8],
+pub struct Expansion<'a, T: 'a + AsRef<[u8]>> {
+	string:  &'a T,
 	params:  [Parameter; 9],
 	context: Option<&'a mut Context>,
 }
 
-impl<'a> Expansion<'a> {
+impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
 	pub fn with<'c: 'a>(mut self, context: &'c mut Context) -> Self {
 		self.context = Some(context);
 		self
 	}
 
 	pub fn to<W: Write>(self, output: W) -> error::Result<()> {
-		self.string.expand(output, &self.params,
+		self.string.as_ref().expand(output, &self.params,
 			self.context.unwrap_or(&mut Default::default()))
 	}
 
 	pub fn to_vec(self) -> error::Result<Vec<u8>> {
-		let mut result = Vec::with_capacity(self.string.len());
+		let mut result = Vec::with_capacity(self.string.as_ref().len());
 		self.to(&mut result)?;
 		Ok(result)
 	}
@@ -235,9 +235,9 @@ macro_rules! define {
 		define!(string define $ident => $capability);
 
 		impl<'a> $ident<'a> {
-			pub fn expand(&self) -> Expansion {
+			pub fn expand(&self) -> Expansion<$ident> {
 				Expansion {
-					string:  self.0.borrow(),
+					string:  self,
 					params:  Default::default(),
 					context: None,
 				}
@@ -249,36 +249,44 @@ macro_rules! define {
 		define!(string define $ident => $capability);
 
 		impl<'a> $ident<'a> {
-			#[allow(unused_assignments)]
-			pub fn expand(&self, $($name: $ty),*) -> Expansion {
-				let mut params: [Parameter; 9] = Default::default();
-				let mut index = 0;
-
-				$({
-					params[index]  = $name.into();
-					index         += 1;
-				})*;
-
+			pub fn expand(&self) -> Expansion<$ident> {
 				Expansion {
-					string:  self.0.borrow(),
-					params:  params,
+					string:  self,
+					params:  Default::default(),
 					context: None,
 				}
 			}
 		}
+
+		impl<'a> Expansion<'a, $ident<'a>> {
+			#[allow(unused_assignments)]
+			pub fn parameters(mut self, $($name: $ty),*) -> Self {
+				let mut index = 0;
+
+				$({
+					self.params[index]  = $name.into();
+					index              += 1;
+				})*;
+
+				self
+			}
+
+			define!(string builder 0, $($name: $ty),*);
+		}
 	);
 
-	(count items $($item:tt),*) => (
-		define!(count 0; $($item),*);
+	(string builder $index:expr, ) => ();
+	(string builder $index:expr, $name:ident : $ty:ty) => (
+		pub fn $name(mut self, value: $ty) -> Self {
+			self.params[$index] = value.into();
+			self
+		}
 	);
 
-	(count $current:expr; $item:tt, $($rest:tt),*) => (
-		define!(count $current + 1; $($rest),*);
-	);
-
-	(count $current:expr) => (
-		$current
-	);
+	(string builder $index:expr, $name:ident : $ty:ty, $($rest:tt)*) => (
+		define!(string builder $index, $name : $ty);
+		define!(string builder $index + 1, $($rest)*);
+	)
 }
 
 define!(boolean AutoLeftMargin => "auto_left_margin");
@@ -872,6 +880,11 @@ mod test {
 		assert_eq!(b"\x1B[3;5H".to_vec(),
 			Database::from_path("tests/cancer-256color").unwrap()
 				.get::<CursorAddress>().unwrap()
-				.expand(2, 4).to_vec().unwrap());
+				.expand().parameters(2, 4).to_vec().unwrap());
+
+		assert_eq!(b"\x1B[3;5H".to_vec(),
+			Database::from_path("tests/cancer-256color").unwrap()
+				.get::<CursorAddress>().unwrap()
+				.expand().x(4).y(2).to_vec().unwrap());
 	}
 }

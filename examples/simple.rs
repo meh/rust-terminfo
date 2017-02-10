@@ -20,8 +20,8 @@ fn main() {
 		println!("FLASH GORDON!");
 	}
 
-	info.get::<cap::SetAForeground>().unwrap().expand(1).to(io::stdout()).unwrap();
-	info.get::<cap::SetABackground>().unwrap().expand(4).to(io::stdout()).unwrap();
+	info.get::<cap::SetAForeground>().unwrap().expand().color(2).to(io::stdout()).unwrap();
+	info.get::<cap::SetABackground>().unwrap().expand().color(4).to(io::stdout()).unwrap();
 	println!("SUP");
 	info.get::<cap::ExitAttributeMode>().unwrap().expand().to(io::stdout()).unwrap();
 }
