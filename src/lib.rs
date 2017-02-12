@@ -23,10 +23,12 @@ pub use error::{Error, Result};
 /// Parsers for various formats.
 pub mod parser;
 
+/// String capability expansion.
 #[macro_use]
 pub mod expand;
 pub use expand::Expand;
 
+/// Standard terminal capabilities.
 pub mod capability;
 pub use capability::{Capability, Value};
 

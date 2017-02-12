@@ -45,6 +45,7 @@ pub enum Value {
 	String(Vec<u8>),
 }
 
+/// Expansion helper struct.
 #[derive(Debug)]
 pub struct Expansion<'a, T: 'a + AsRef<[u8]>> {
 	string:  &'a T,
@@ -53,16 +54,19 @@ pub struct Expansion<'a, T: 'a + AsRef<[u8]>> {
 }
 
 impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
+	/// Expand using the given context.
 	pub fn with<'c: 'a>(mut self, context: &'c mut Context) -> Self {
 		self.context = Some(context);
 		self
 	}
 
+	/// Expand to the given output.
 	pub fn to<W: Write>(self, output: W) -> error::Result<()> {
 		self.string.as_ref().expand(output, &self.params,
 			self.context.unwrap_or(&mut Default::default()))
 	}
 
+	/// Expand into a vector.
 	pub fn to_vec(self) -> error::Result<Vec<u8>> {
 		let mut result = Vec::with_capacity(self.string.as_ref().len());
 		self.to(&mut result)?;
@@ -219,12 +223,14 @@ macro_rules! define {
 		}
 
 		impl<'a, T: AsRef<&'a [u8]>> From<T> for $ident<'a> {
+			#[inline]
 			fn from(value: T) -> Self {
 				$ident(Cow::Borrowed(value.as_ref()))
 			}
 		}
 
 		impl<'a> AsRef<[u8]> for $ident<'a> {
+			#[inline]
 			fn as_ref(&self) -> &[u8] {
 				&self.0
 			}
@@ -235,6 +241,8 @@ macro_rules! define {
 		define!(string define $ident => $capability);
 
 		impl<'a> $ident<'a> {
+			/// Begin expanding the capability.
+			#[inline]
 			pub fn expand(&self) -> Expansion<$ident> {
 				Expansion {
 					string:  self,
@@ -249,6 +257,7 @@ macro_rules! define {
 		define!(string define $ident => $capability);
 
 		impl<'a> $ident<'a> {
+			/// Begin expanding the capability.
 			pub fn expand(&self) -> Expansion<$ident> {
 				Expansion {
 					string:  self,
@@ -259,6 +268,7 @@ macro_rules! define {
 		}
 
 		impl<'a> Expansion<'a, $ident<'a>> {
+			/// Pass all expansion parameters at once.
 			#[allow(unused_assignments)]
 			pub fn parameters(mut self, $($name: $ty),*) -> Self {
 				let mut index = 0;
@@ -277,6 +287,7 @@ macro_rules! define {
 
 	(string builder $index:expr, ) => ();
 	(string builder $index:expr, $name:ident : $ty:ty) => (
+		/// Set the given parameter.
 		pub fn $name(mut self, value: $ty) -> Self {
 			self.params[$index] = value.into();
 			self
