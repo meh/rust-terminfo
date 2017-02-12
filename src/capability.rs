@@ -295,8 +295,8 @@ macro_rules! define {
 	(string builder $index:expr, ) => ();
 	(string builder $index:expr, $name:ident : $ty:ty) => (
 		/// Set the given parameter.
-		pub fn $name(mut self, value: $ty) -> Self {
-			self.params[$index] = value.into();
+		pub fn $name<T: Into<$ty>>(mut self, value: T) -> Self {
+			self.params[$index] = value.into().into();
 			self
 		}
 	);
@@ -864,8 +864,8 @@ define!(boolean XTermMouse => "XM");
 define!(boolean TrueColor => "Tc");
 
 define!(string SetClipboard => "Ms";
-	selection: &str,
-	content:   &[u8]);
+	selection: String,
+	content:   Vec<u8>);
 
 define!(string SetCursorStyle => "Ss";
 	kind: u8);
@@ -886,7 +886,7 @@ define!(string SetTrueColorBackground => "8b";
 define!(string ResetCursorColor => "Cr");
 
 define!(string SetCursorColor => "Cs";
-	color: &str);
+	color: String);
 
 #[cfg(test)]
 mod test {
@@ -903,6 +903,16 @@ mod test {
 		assert_eq!(b"\x1B[3;5H".to_vec(),
 			Database::from_path("tests/cancer-256color").unwrap()
 				.get::<CursorAddress>().unwrap()
-				.expand().x(4).y(2).to_vec().unwrap());
+				.expand().x(4u32).y(2u32).to_vec().unwrap());
+
+		assert_eq!(b"\x1B[38;2;50;100;150m".to_vec(),
+			Database::from_path("tests/cancer-256color").unwrap()
+				.get::<SetTrueColorForeground>().unwrap()
+				.expand().r(50).g(100).b(150).to_vec().unwrap());
+
+		assert_eq!(b"\x1B]clipboard:set:PRIMARY:hue\x07".to_vec(),
+			Database::from_path("tests/cancer-256color").unwrap()
+				.get::<SetClipboard>().unwrap()
+				.expand().selection("PRIMARY").content("hue").to_vec().unwrap());
 	}
 }
