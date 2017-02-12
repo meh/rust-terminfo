@@ -251,6 +251,13 @@ macro_rules! define {
 				}
 			}
 		}
+
+		impl<'a> Expansion<'a, $ident<'a>> {
+			/// Pass all expansion parameters at once.
+			pub fn parameters(self) -> Self {
+				self
+			}
+		}
 	);
 
 	(string $ident:ident => $capability:expr; $($name:ident : $ty:ty),+) => (
