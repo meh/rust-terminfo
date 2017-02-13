@@ -235,10 +235,6 @@ macro_rules! define {
 				&self.0
 			}
 		}
-	);
-
-	(string $ident:ident => $capability:expr) => (
-		define!(string define $ident => $capability);
 
 		impl<'a> $ident<'a> {
 			/// Begin expanding the capability.
@@ -251,32 +247,31 @@ macro_rules! define {
 				}
 			}
 		}
+	);
+
+	(string $ident:ident => $capability:expr) => (
+		define!(string define $ident => $capability);
 
 		impl<'a> Expansion<'a, $ident<'a>> {
 			/// Pass all expansion parameters at once.
+			#[inline]
 			pub fn parameters(self) -> Self {
 				self
 			}
 		}
 	);
 
-	(string $ident:ident => $capability:expr; $($name:ident : $ty:ty),+) => (
+	(string $ident:ident => $capability:expr; $($rest:tt)+) => (
 		define!(string define $ident => $capability);
+		define!(string parameters $ident; $($rest)+);
+		define!(string builder $ident; 0, $($rest)+, );
+	);
 
-		impl<'a> $ident<'a> {
-			/// Begin expanding the capability.
-			pub fn expand(&self) -> Expansion<$ident> {
-				Expansion {
-					string:  self,
-					params:  Default::default(),
-					context: None,
-				}
-			}
-		}
-
+	(string parameters $ident:ident; $($name:ident : $ty:ty),+) => (
 		impl<'a> Expansion<'a, $ident<'a>> {
 			/// Pass all expansion parameters at once.
 			#[allow(unused_assignments)]
+			#[inline]
 			pub fn parameters(mut self, $($name: $ty),*) -> Self {
 				let mut index = 0;
 
@@ -287,24 +282,67 @@ macro_rules! define {
 
 				self
 			}
-
-			define!(string builder 0, $($name: $ty),*);
 		}
 	);
 
-	(string builder $index:expr, ) => ();
-	(string builder $index:expr, $name:ident : $ty:ty) => (
-		/// Set the given parameter.
-		pub fn $name<T: Into<$ty>>(mut self, value: T) -> Self {
-			self.params[$index] = value.into().into();
-			self
+	(string builder $ident:ident; $index:expr, ) => ();
+
+	(string builder $ident:ident; $index:expr, $name:ident : u8, $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : u8);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : i8, $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : i8);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : u16, $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : u16);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : i16 $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : i16);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : u32, $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : u32);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : i32, $($rest:tt)*) => (
+		define!(string builder direct $ident; $index, $name : i32);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder $ident:ident; $index:expr, $name:ident : $ty:ty, $($rest:tt)*) => (
+		define!(string builder into $ident; $index, $name : $ty);
+		define!(string builder $ident; $index + 1, $($rest)*);
+	);
+
+	(string builder direct $ident:ident; $index:expr, $name:ident : $ty:ty) => (
+		impl<'a> Expansion<'a, $ident<'a>> {
+			/// Set the given parameter.
+			#[inline]
+			pub fn $name(mut self, value: $ty) -> Self {
+				self.params[$index] = value.into();
+				self
+			}
 		}
 	);
 
-	(string builder $index:expr, $name:ident : $ty:ty, $($rest:tt)*) => (
-		define!(string builder $index, $name : $ty);
-		define!(string builder $index + 1, $($rest)*);
-	)
+	(string builder into $ident:ident; $index:expr, $name:ident : $ty:ty) => (
+		impl<'a> Expansion<'a, $ident<'a>> {
+			/// Set the given parameter.
+			#[inline]
+			pub fn $name<T: Into<$ty>>(mut self, value: T) -> Self {
+				self.params[$index] = value.into().into();
+				self
+			}
+		}
+	);
 }
 
 define!(boolean AutoLeftMargin => "auto_left_margin");
@@ -903,7 +941,7 @@ mod test {
 		assert_eq!(b"\x1B[3;5H".to_vec(),
 			Database::from_path("tests/cancer-256color").unwrap()
 				.get::<CursorAddress>().unwrap()
-				.expand().x(4u32).y(2u32).to_vec().unwrap());
+				.expand().x(4).y(2).to_vec().unwrap());
 
 		assert_eq!(b"\x1B[38;2;50;100;150m".to_vec(),
 			Database::from_path("tests/cancer-256color").unwrap()
