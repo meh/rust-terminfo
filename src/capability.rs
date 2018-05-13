@@ -546,7 +546,6 @@ define!(string RestoreCursor => "restore_cursor");
 define!(string SaveCursor => "save_cursor");
 define!(string ScrollForward => "scroll_forward");
 define!(string ScrollReverse => "scroll_reverse");
-define!(string SetAttributes => "set_attributes");
 define!(string SetTab => "set_tab");
 define!(string SetWindow => "set_window");
 define!(string Tab => "tab");
@@ -880,6 +879,17 @@ define!(string ParmUpMicro => "parm_up_micro";
 
 define!(string RowAddress => "row_address";
 	y: u32);
+
+define!(string SetAttributes => "set_attributes";
+    standout:    bool,
+    underline:   bool,
+    reverse:     bool,
+    blink:       bool,
+    dim:         bool,
+    bold:        bool,
+    invisible:   bool,
+    protected:   bool,
+    alt_charset: bool);
 
 define!(string SetAForeground => "set_a_foreground";
 	color: u8);
