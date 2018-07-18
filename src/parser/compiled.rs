@@ -111,8 +111,8 @@ pub struct Extended<'a> {
 
 fn number_size(magic: &[u8]) -> usize {
 	match magic[1] {
-		0x01 => 16,
-		0x02 => 32,
+		0x01 => 2,
+		0x02 => 4,
 
 		_ =>
 			unreachable!("unknown magic number")
@@ -138,11 +138,11 @@ named!(pub parse<Database>,
 		cond!((name_size + bool_count) % 2 != 0,
 			take!(1)) >>
 
-		numbers: flat_map!(take!(num_count * 2),
+		numbers: flat_map!(take!(num_count * (number_size(magic) as i16)),
 			all!(apply!(capability, number_size(magic)))) >>
 
 		strings: flat_map!(take!(string_count * 2),
-			all!(apply!(capability, number_size(magic)))) >>
+			all!(apply!(capability, 2))) >>
 
 		table: take!(table_size) >>
 
@@ -162,14 +162,14 @@ named!(pub parse<Database>,
 			cond!(ext_bool_count % 2 != 0,
 				take!(1)) >>
 
-			numbers: flat_map!(take!(ext_num_count * 2),
+			numbers: flat_map!(take!(ext_num_count * (number_size(magic) as i16)),
 				all!(apply!(capability, number_size(magic)))) >>
 
 			strings: flat_map!(take!(ext_string_count * 2),
-				all!(apply!(capability, number_size(magic)))) >>
+				all!(apply!(capability, 2))) >>
 
 			names: flat_map!(take!((ext_bool_count + ext_num_count + ext_string_count) * 2),
-				all!(apply!(capability, number_size(magic)))) >>
+				all!(apply!(capability, 2))) >>
 
 			table: take!(ext_table_size) >>
 
@@ -206,10 +206,10 @@ named!(size<i16>,
 
 named_args!(capability(size: usize)<i32>,
 	alt!(
-		cond_reduce!(size == 16,
+		cond_reduce!(size == 2,
 			map_opt!(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })) |
 
-		cond_reduce!(size == 32,
+		cond_reduce!(size == 4,
 			map_opt!(le_i32, |n| if n >= -2 { Some(n) } else { None }))));
 
 #[cfg(test)]
