@@ -235,6 +235,12 @@ mod test {
 	}
 
 	#[test]
+	fn name_ncurses_6() {
+		load("tests/ncurses_6/xterm-256color", |db|
+			assert_eq!("xterm-256color", db.name()));
+	}
+
+	#[test]
 	fn aliases() {
 		load("tests/st-256color", |db|
 			assert_eq!(vec!["stterm-256color"], db.aliases()));
