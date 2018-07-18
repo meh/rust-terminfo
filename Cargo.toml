@@ -1,6 +1,6 @@
 [package]
 name    = "terminfo"
-version = "0.5.0"
+version = "0.6.0"
 
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"
