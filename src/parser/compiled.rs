@@ -263,4 +263,10 @@ mod test {
 			assert_eq!(Some(&cap::Value::String(b"\x1B[2 q".to_vec())), db.raw("Se"));
 		});
 	}
+
+	#[test]
+	fn bigger_numbers() {
+		load("tests/xterm-256color", |db|
+			assert_eq!("xterm-256color", db.name()));
+	}
 }
