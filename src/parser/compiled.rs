@@ -13,7 +13,7 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::str;
-use nom::le_i16;
+use nom::{le_i16, le_i32};
 
 use names;
 use capability::Value;
@@ -95,23 +95,33 @@ impl<'a> Into<::Database> for Database<'a> {
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Standard<'a> {
 	booleans: Vec<bool>,
-	numbers:  Vec<i16>,
-	strings:  Vec<i16>,
+	numbers:  Vec<i32>,
+	strings:  Vec<i32>,
 	table:    &'a [u8],
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Extended<'a> {
 	booleans: Vec<bool>,
-	numbers:  Vec<i16>,
-	strings:  Vec<i16>,
-	names:    Vec<i16>,
+	numbers:  Vec<i32>,
+	strings:  Vec<i32>,
+	names:    Vec<i32>,
 	table:    &'a [u8],
+}
+
+fn number_size(magic: &[u8]) -> usize {
+	match magic[1] {
+		0x01 => 16,
+		0x02 => 32,
+
+		_ =>
+			unreachable!("unknown magic number")
+	}
 }
 
 named!(pub parse<Database>,
 	do_parse!(
-		tag!([0x1A, 0x01]) >>
+		magic: alt!(tag!([0x1A, 0x01]) | tag!([0x1E, 0x02])) >>
 
 		name_size:    size >>
 		bool_count:   size >>
@@ -129,10 +139,10 @@ named!(pub parse<Database>,
 			take!(1)) >>
 
 		numbers: flat_map!(take!(num_count * 2),
-			all!(capability)) >>
+			all!(apply!(capability, number_size(magic)))) >>
 
 		strings: flat_map!(take!(string_count * 2),
-			all!(capability)) >>
+			all!(apply!(capability, number_size(magic)))) >>
 
 		table: take!(table_size) >>
 
@@ -153,13 +163,13 @@ named!(pub parse<Database>,
 				take!(1)) >>
 
 			numbers: flat_map!(take!(ext_num_count * 2),
-				all!(capability)) >>
+				all!(apply!(capability, number_size(magic)))) >>
 
 			strings: flat_map!(take!(ext_string_count * 2),
-				all!(capability)) >>
+				all!(apply!(capability, number_size(magic)))) >>
 
 			names: flat_map!(take!((ext_bool_count + ext_num_count + ext_string_count) * 2),
-				all!(capability)) >>
+				all!(apply!(capability, number_size(magic)))) >>
 
 			table: take!(ext_table_size) >>
 
@@ -194,8 +204,13 @@ named!(size<i16>,
 		n if n >= 0 => Some(n),
 		_           => None }));
 
-named!(capability<i16>,
-	map_opt!(le_i16, |n| if n >= -2 { Some(n) } else { None }));
+named_args!(capability(size: usize)<i32>,
+	alt!(
+		cond_reduce!(size == 16,
+			map_opt!(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })) |
+
+		cond_reduce!(size == 32,
+			map_opt!(le_i32, |n| if n >= -2 { Some(n) } else { None }))));
 
 #[cfg(test)]
 mod test {

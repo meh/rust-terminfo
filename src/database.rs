@@ -252,7 +252,7 @@ impl Database {
 	/// use terminfo::{Database, capability as cap};
 	///
 	/// let info        = Database::from_env().unwrap();
-	/// let colors: i16 = info.get::<cap::MaxColors>().unwrap().into();
+	/// let colors: i32 = info.get::<cap::MaxColors>().unwrap().into();
 	/// ```
 	pub fn get<'a, C: Capability<'a>>(&'a self) -> Option<C> {
 		C::from(self.inner.get(C::name()))

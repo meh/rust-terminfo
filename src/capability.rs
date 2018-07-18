@@ -39,7 +39,7 @@ pub enum Value {
 	True,
 
 	/// A number.
-	Number(i16),
+	Number(i32),
 
 	/// An ASCII string requiring expansion.
 	String(Vec<u8>),
@@ -78,7 +78,7 @@ macro_rules! from {
 	(number $ty:ty) => (
 		impl From<$ty> for Value {
 			fn from(value: $ty) -> Self {
-				Value::Number(value as i16)
+				Value::Number(value as i32)
 			}
 		}
 	);
@@ -159,7 +159,7 @@ macro_rules! define {
 
 	(number $ident:ident => $capability:expr) => (
 		#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-		pub struct $ident(pub i16);
+		pub struct $ident(pub i32);
 
 		impl<'a> Capability<'a> for $ident {
 			#[inline]
@@ -183,8 +183,8 @@ macro_rules! define {
 			}
 		}
 
-		impl Into<i16> for $ident {
-			fn into(self) -> i16 {
+		impl Into<i32> for $ident {
+			fn into(self) -> i32 {
 				self.0
 			}
 		}
