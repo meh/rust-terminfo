@@ -16,7 +16,6 @@ use std::char;
 use std::io::{BufWriter, Write};
 
 use error;
-use nom::IResult;
 use parser::expansion::*;
 
 /// Trait for items that can be expanded.
@@ -186,13 +185,12 @@ impl Expand for [u8] {
 		macro_rules! next {
 			() => (
 				match parse(input) {
-					IResult::Done(rest, item) => {
+					Ok((rest, item)) => {
 						input = rest;
 						item
 					}
 
-					IResult::Incomplete(..) |
-					IResult::Error(..) =>
+					Err(_) =>
 						return Err(error::Expand::Invalid.into())
 				}
 			);

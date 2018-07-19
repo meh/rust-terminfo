@@ -23,7 +23,6 @@ use fnv::FnvHasher;
 use capability::{Capability, Value};
 use names;
 use error::{self, Error};
-use nom::IResult;
 use parser::compiled;
 
 /// A capability database.
@@ -221,7 +220,7 @@ impl Database {
 
 	/// Load a database from a buffer.
 	pub fn from_buffer<T: AsRef<[u8]>>(buffer: T) -> error::Result<Self> {
-		if let IResult::Done(_, database) = compiled::parse(buffer.as_ref()) {
+		if let Ok((_, database)) = compiled::parse(buffer.as_ref()) {
 			Ok(database.into())
 		}
 		else {

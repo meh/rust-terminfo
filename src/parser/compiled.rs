@@ -150,11 +150,11 @@ named!(pub parse<Database>,
 			cond!(table_size % 2 != 0,
 				take!(1)) >>
 
-			ext_bool_count:   size >>
-			ext_num_count:    size >>
-			ext_string_count: size >>
-			ext_offset_count: size >>
-			ext_table_size:   size >>
+			ext_bool_count:    size >>
+			ext_num_count:     size >>
+			ext_string_count:  size >>
+			_ext_offset_count: size >>
+			ext_table_size:    size >>
 
 			booleans: flat_map!(take!(ext_bool_count),
 				all!(boolean)) >>

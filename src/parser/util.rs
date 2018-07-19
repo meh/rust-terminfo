@@ -19,7 +19,7 @@ use nom::{eol, is_digit};
 
 macro_rules! all {
 	($i:expr, $submac:ident!( $($args:tt)* )) => ({
-		use ::nom::InputLength;
+		use $crate::nom::InputLength;
 
 		let ret;
 		let mut res = ::std::vec::Vec::new();
@@ -27,24 +27,25 @@ macro_rules! all {
 
 		loop {
 			if input.input_len() == 0 {
-				ret = ::nom::IResult::Done(input, res);
+				ret = Ok((input, res));
 				break;
 			}
 
 			match $submac!(input, $($args)*) {
-				::nom::IResult::Error(err) => {
-					ret = ::nom::IResult::Error(err);
+				Err($crate::nom::Err::Error(err)) |
+				Err($crate::nom::Err::Failure(err)) => {
+					ret = Err($crate::nom::Err::Error(err));
 					break;
 				}
 
-				::nom::IResult::Incomplete(..) => {
-					ret = ::nom::IResult::Incomplete(::nom::Needed::Unknown);
+				Err($crate::nom::Err::Incomplete(_)) => {
+					ret = Err($crate::nom::Err::Incomplete($crate::nom::Needed::Unknown));
 					break;
 				}
 
-				::nom::IResult::Done(i, o) => {
+				Ok((i, o)) => {
 					if i == input {
-						ret = ::nom::IResult::Error(error_position!(::nom::ErrorKind::Many0, input));
+						ret = Err($crate::nom::Err::Error(error_position!(input, $crate::nom::ErrorKind::Many0)));
 						break;
 					}
 
@@ -69,19 +70,22 @@ macro_rules! take_until_or_eof (
       use $crate::nom::FindSubstring;
       use $crate::nom::Slice;
 
-      let res: $crate::nom::IResult<_,_> = if $substr.input_len() > $i.input_len() {
-        $crate::nom::IResult::Incomplete($crate::nom::Needed::Size($substr.input_len()))
-      } else {
+      let ret: $crate::nom::IResult<_, _> = if $substr.input_len() > $i.input_len() {
+        Err($crate::nom::Err::Incomplete($crate::nom::Needed::Size($substr.input_len())))
+      }
+			else {
         match ($i).find_substring($substr) {
           None => {
-            $crate::nom::IResult::Done($i.slice(0..0), $i)
+            Ok(($i.slice(0..0), $i))
           },
+
           Some(index) => {
-            $crate::nom::IResult::Done($i.slice(index..), $i.slice(0..index))
+            Ok(($i.slice(index..), $i.slice(0..index)))
           },
         }
       };
-      res
+
+      ret
     }
   );
 );

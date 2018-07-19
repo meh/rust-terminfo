@@ -117,7 +117,6 @@ named!(entry<Item>,
 mod test {
 	use super::*;
 
-	use nom::IResult;
 	use std::fs::File;
 	use std::io::Read;
 
@@ -131,13 +130,13 @@ mod test {
 
 		while !input.is_empty() {
 			match parse(input) {
-				IResult::Done(rest, _) =>
+				Ok((rest, _)) =>
 					input = rest,
 
-				IResult::Incomplete(_) =>
+				Err(::nom::Err::Incomplete(_)) =>
 					panic!("incomplete"),
 
-				IResult::Error(err) =>
+				Err(err) =>
 					panic!("parsing: {:?}", err),
 			}
 		}
