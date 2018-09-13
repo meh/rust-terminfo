@@ -17,52 +17,6 @@ use std::u8;
 use std::borrow::Cow;
 use nom::{eol, is_digit};
 
-macro_rules! all {
-	($i:expr, $submac:ident!( $($args:tt)* )) => ({
-		use $crate::nom::InputLength;
-
-		let ret;
-		let mut res = ::std::vec::Vec::new();
-		let mut input = $i;
-
-		loop {
-			if input.input_len() == 0 {
-				ret = Ok((input, res));
-				break;
-			}
-
-			match $submac!(input, $($args)*) {
-				Err($crate::nom::Err::Error(err)) |
-				Err($crate::nom::Err::Failure(err)) => {
-					ret = Err($crate::nom::Err::Error(err));
-					break;
-				}
-
-				Err($crate::nom::Err::Incomplete(_)) => {
-					ret = Err($crate::nom::Err::Incomplete($crate::nom::Needed::Unknown));
-					break;
-				}
-
-				Ok((i, o)) => {
-					if i == input {
-						ret = Err($crate::nom::Err::Error(error_position!(input, $crate::nom::ErrorKind::Many0)));
-						break;
-					}
-
-					res.push(o);
-					input = i;
-				}
-			}
-		}
-
-		ret
-	});
-
-	($i:expr, $f:expr) => (
-		all!($i, call!($f));
-	);
-}
-
 macro_rules! take_until_or_eof (
   ($i:expr, $substr:expr) => (
     {
@@ -159,8 +113,8 @@ pub fn is_printable_no_control(ch: u8) -> bool {
 	unsafe { ASCII.get_unchecked(ch as usize) & (PRINT | CONTROL) == PRINT }
 }
 
-named!(pub ws,
-	alt!(tag!(" ") | tag!("\t")));
+named!(pub ws<char>,
+	alt!(char!(' ') | char!('\t')));
 
 named!(pub end,
 	alt!(eof!() | eol));

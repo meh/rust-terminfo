@@ -132,17 +132,17 @@ named!(pub parse<Database>,
 		names: flat_map!(take!(name_size),
 			take_until!("\x00")) >>
 
-		booleans: flat_map!(take!(bool_count),
-			all!(boolean)) >>
+		booleans: count!(boolean,
+			bool_count) >>
 
 		cond!((name_size + bool_count) % 2 != 0,
 			take!(1)) >>
 
-		numbers: flat_map!(take!(num_count * (bit_size(magic) as i16 / 8)),
-			all!(apply!(capability, bit_size(magic)))) >>
+		numbers: count!(apply!(capability, bit_size(magic)),
+			num_count) >>
 
-		strings: flat_map!(take!(string_count * 2),
-			all!(apply!(capability, 16))) >>
+		strings: count!(apply!(capability, 16),
+			string_count) >>
 
 		table: take!(table_size) >>
 
@@ -156,20 +156,20 @@ named!(pub parse<Database>,
 			_ext_offset_count: size >>
 			ext_table_size:    size >>
 
-			booleans: flat_map!(take!(ext_bool_count),
-				all!(boolean)) >>
+			booleans: count!(boolean,
+				ext_bool_count) >>
 
 			cond!(ext_bool_count % 2 != 0,
 				take!(1)) >>
 
-			numbers: flat_map!(take!(ext_num_count * (bit_size(magic) as i16 / 8)),
-				all!(apply!(capability, bit_size(magic)))) >>
+			numbers: count!(apply!(capability, bit_size(magic)),
+				ext_num_count) >>
 
-			strings: flat_map!(take!(ext_string_count * 2),
-				all!(apply!(capability, 16))) >>
+			strings: count!(apply!(capability, 16),
+				ext_string_count) >>
 
-			names: flat_map!(take!((ext_bool_count + ext_num_count + ext_string_count) * 2),
-				all!(apply!(capability, 16))) >>
+			names: count!(apply!(capability, 16),
+				ext_bool_count + ext_num_count + ext_string_count) >>
 
 			table: take!(ext_table_size) >>
 
@@ -198,10 +198,10 @@ named!(boolean<bool>,
 	alt!(tag!([0]) => { |_| false } |
 	     tag!([1]) => { |_| true }));
 
-named!(size<i16>,
+named!(size<usize>,
 	map_opt!(le_i16, |n| match n {
 		-1          => Some(0),
-		n if n >= 0 => Some(n),
+		n if n >= 0 => Some(n as usize),
 		_           => None }));
 
 named_args!(capability(bits: usize)<i32>,
