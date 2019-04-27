@@ -172,6 +172,12 @@ impl Database {
 				search.push(home.into());
 			}
 
+			// handle non-FHS systems like Termux
+			if let Ok(prefix) = env::var("PREFIX") {
+				let path = Path::new(&prefix);
+				search.push(path.join("share/terminfo"));
+			}
+
 			search.push("/etc/terminfo".into());
 			search.push("/lib/terminfo".into());
 			search.push("/usr/share/terminfo".into());
