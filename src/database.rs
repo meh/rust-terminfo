@@ -175,6 +175,8 @@ impl Database {
 			// handle non-FHS systems like Termux
 			if let Ok(prefix) = env::var("PREFIX") {
 				let path = Path::new(&prefix);
+				search.push(path.join("etc/terminfo"));
+				search.push(path.join("lib/terminfo"));
 				search.push(path.join("share/terminfo"));
 			}
 
