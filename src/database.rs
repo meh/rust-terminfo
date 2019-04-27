@@ -18,6 +18,8 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+
+use dirs;
 use fnv::FnvHasher;
 
 use capability::{Capability, Value};
@@ -167,7 +169,7 @@ impl Database {
 			}
 		}
 		else {
-			if let Some(mut home) = env::home_dir() {
+			if let Some(mut home) = dirs::home_dir() {
 				home.push(".terminfo");
 				search.push(home.into());
 			}
