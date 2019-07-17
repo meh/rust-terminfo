@@ -14,7 +14,7 @@
 
 use std::borrow::Cow;
 use std::str;
-use nom::{is_digit, eol};
+use nom::character::{is_digit, streaming::line_ending as eol};
 use parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
 use parser::util::{is_eol, is_ws, ws, end};
 use parser::util::unescape;
@@ -41,7 +41,7 @@ named!(pub parse<Item>,
 named!(comment<Item>,
 	do_parse!(
 		tag!("#") >>
-		content: map_res!(take_until_and_consume!("\n"), str::from_utf8) >>
+		content: map_res!(terminated!(take_until!("\n"), tag!("\n")), str::from_utf8) >>
 		take_while!(is_eol) >>
 
 		(Item::Comment(content.trim()))));

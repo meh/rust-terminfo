@@ -13,7 +13,7 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::str;
-use nom::{le_i16, le_i32};
+use nom::number::streaming::{le_i16, le_i32};
 
 use names;
 use capability::Value;
@@ -119,6 +119,32 @@ fn bit_size(magic: &[u8]) -> usize {
 	}
 }
 
+macro_rules! cond_reduce(
+	($i:expr, $cond:expr, $submac:ident!( $($args:tt)* )) => (
+		{
+			use nom::lib::std::result::Result::*;
+			use nom::{Err,error::ErrorKind,IResult};
+			let default_err = Err(Err::convert(Err::Error(error_position!($i, ErrorKind::MapRes))));
+
+			if $cond {
+				let sub_res = $submac!($i, $($args)*);
+				fn unify_types<I,O,E>(_: &IResult<I,O,E>, _: &IResult<I,O,E>) {}
+				unify_types(&sub_res, &default_err);
+
+				match sub_res {
+					Ok((i,o)) => Ok((i, o)),
+					Err(e)    => Err(e),
+				}
+			} else {
+				default_err
+			}
+		}
+	);
+	($i:expr, $cond:expr, $f:expr) => (
+		cond_reduce!($i, $cond, call!($f));
+	);
+);
+
 named!(pub parse<Database>,
 	do_parse!(
 		magic: alt!(tag!([0x1A, 0x01]) | tag!([0x1E, 0x02])) >>
@@ -138,10 +164,10 @@ named!(pub parse<Database>,
 		cond!((name_size + bool_count) % 2 != 0,
 			take!(1)) >>
 
-		numbers: count!(apply!(capability, bit_size(magic)),
+		numbers: count!(call!(capability, bit_size(magic)),
 			num_count) >>
 
-		strings: count!(apply!(capability, 16),
+		strings: count!(call!(capability, 16),
 			string_count) >>
 
 		table: take!(table_size) >>
@@ -162,13 +188,13 @@ named!(pub parse<Database>,
 			cond!(ext_bool_count % 2 != 0,
 				take!(1)) >>
 
-			numbers: count!(apply!(capability, bit_size(magic)),
+			numbers: count!(call!(capability, bit_size(magic)),
 				ext_num_count) >>
 
-			strings: count!(apply!(capability, 16),
+			strings: count!(call!(capability, 16),
 				ext_string_count) >>
 
-			names: count!(apply!(capability, 16),
+			names: count!(call!(capability, 16),
 				ext_bool_count + ext_num_count + ext_string_count) >>
 
 			table: take!(ext_table_size) >>
