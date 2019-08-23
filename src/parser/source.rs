@@ -42,7 +42,7 @@ named!(comment<Item>,
 	do_parse!(
 		tag!("#") >>
 		content: map_res!(terminated!(take_until!("\n"), tag!("\n")), str::from_utf8) >>
-		take_while!(is_eol) >>
+		opt!(complete!(take_while!(is_eol))) >>
 
 		(Item::Comment(content.trim()))));
 
@@ -58,7 +58,7 @@ named!(definition<Item>,
 
 		tag!(",") >>
 		take_while!(is_ws) >>
-		eol >> take_while!(is_eol) >>
+		eol >> opt!(complete!(take_while!(is_eol))) >>
 
 		({
 			let mut aliases = content.split(|c| c == '|').map(|n| n.trim()).collect::<Vec<_>>();
@@ -79,7 +79,7 @@ named!(disable<Item>,
 			unsafe { str::from_utf8_unchecked(n) }) >>
 
 		tag!(",") >>
-		take_while!(is_ws) >> end >> take_while!(is_eol) >>
+		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
 
 		(Item::Disable(name))));
 
@@ -109,7 +109,7 @@ named!(entry<Item>,
 
 				(Item::String(name, unescape(value))))) >>
 
-		take_while!(is_ws) >> end >> take_while!(is_eol) >>
+		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
 
 		(value)));
 
