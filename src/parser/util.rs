@@ -15,7 +15,7 @@
 use std::str;
 use std::u8;
 use std::borrow::Cow;
-use nom::{eol, is_digit};
+use nom::character::{streaming::line_ending as eol, is_digit};
 
 macro_rules! take_until_or_eof (
   ($i:expr, $substr:expr) => (

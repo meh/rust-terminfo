@@ -13,7 +13,7 @@ categories  = ["command-line-interface"]
 build = "build.rs"
 
 [dependencies]
-nom = "4.0"
+nom = "5.0"
 phf = "0.7"
 fnv = "1.0"
 
