@@ -19,11 +19,12 @@ use std::io::Read;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use fnv::FnvHasher;
+use dirs;
 
-use capability::{Capability, Value};
-use names;
-use error::{self, Error};
-use parser::compiled;
+use crate::capability::{Capability, Value};
+use crate::names;
+use crate::error::{self, Error};
+use crate::parser::compiled;
 
 /// A capability database.
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -167,7 +168,7 @@ impl Database {
 			}
 		}
 		else {
-			if let Some(mut home) = env::home_dir() {
+			if let Some(mut home) = dirs::home_dir() {
 				home.push(".terminfo");
 				search.push(home.into());
 			}

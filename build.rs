@@ -921,15 +921,16 @@ fn main() {
 	for (index, name) in BOOLEAN.iter().enumerate() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
+	let keys = BOOLEAN.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static BOOLEAN_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
-	let mut builder = phf_codegen::Map::new();
-	for (index, name) in BOOLEAN.iter().enumerate() {
-		builder.entry(format!("\"{}\"", name), &index.to_string());
+	let mut builder = phf_codegen::Map::<&str>::new();
+	for (index, name) in keys.iter().enumerate() {
+		builder.entry(name, &index.to_string());
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
 	write!(&mut file, "pub static NUMBER: ::phf::Map<u16, &'static str> = ").unwrap();
@@ -937,15 +938,16 @@ fn main() {
 	for (index, name) in NUMBER.iter().enumerate() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
+	let keys = NUMBER.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static NUMBER_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
-	let mut builder = phf_codegen::Map::new();
-	for (index, name) in NUMBER.iter().enumerate() {
-		builder.entry(format!("\"{}\"", name), &index.to_string());
+	let mut builder = phf_codegen::Map::<&str>::new();
+	for (index, name) in keys.iter().enumerate() {
+		builder.entry(name, &index.to_string());
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
 	write!(&mut file, "pub static STRING: ::phf::Map<u16, &'static str> = ").unwrap();
@@ -953,15 +955,16 @@ fn main() {
 	for (index, name) in STRING.iter().enumerate() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
+	let keys = STRING.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static STRING_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
-	let mut builder = phf_codegen::Map::new();
-	for (index, name) in STRING.iter().enumerate() {
-		builder.entry(format!("\"{}\"", name), &index.to_string());
+	let mut builder = phf_codegen::Map::<&str>::new();
+	for (index, name) in keys.iter().enumerate() {
+		builder.entry(name, &index.to_string());
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
 	write!(&mut file, "pub static TERMINFO: ::phf::Map<&'static str, &'static str> = ").unwrap();
@@ -969,7 +972,7 @@ fn main() {
 	for &(name, value) in TERMINFO {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
 	write!(&mut file, "pub static TERMCAP: ::phf::Map<&'static str, &'static str> = ").unwrap();
@@ -977,7 +980,7 @@ fn main() {
 	for &(name, value) in TERMCAP {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 
 	write!(&mut file, "pub static ALIASES: ::phf::Map<&'static str, &'static str> = ").unwrap();
@@ -990,6 +993,6 @@ fn main() {
 			builder.entry(name, &format!("\"{}\"", value));
 		}
 	}
-	builder.build(&mut file).unwrap();
+	write!(&mut file, "{}", builder.build()).unwrap();
 	write!(&mut file, ";\n").unwrap();
 }

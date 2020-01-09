@@ -18,7 +18,7 @@ extern crate phf;
 extern crate fnv;
 
 mod error;
-pub use error::{Error, Result};
+pub use crate::error::{Error, Result};
 
 /// Parsers for various formats.
 pub mod parser;
@@ -26,14 +26,14 @@ pub mod parser;
 /// String capability expansion.
 #[macro_use]
 pub mod expand;
-pub use expand::Expand;
+pub use crate::expand::Expand;
 
 /// Standard terminal capabilities.
 pub mod capability;
-pub use capability::{Capability, Value};
+pub use crate::capability::{Capability, Value};
 
 mod database;
-pub use database::Database;
+pub use crate::database::Database;
 
 /// Constants to deal with name differences across terminfo and termcap.
 pub mod names;

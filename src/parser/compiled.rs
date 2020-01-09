@@ -15,8 +15,8 @@
 use std::str;
 use nom::number::streaming::{le_i16, le_i32};
 
-use names;
-use capability::Value;
+use crate::names;
+use crate::capability::Value;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Database<'a> {
@@ -25,14 +25,14 @@ pub struct Database<'a> {
 	extended: Option<Extended<'a>>,
 }
 
-impl<'a> Into<::Database> for Database<'a> {
-	fn into(self) -> ::Database {
+impl<'a> Into<crate::Database> for Database<'a> {
+	fn into(self) -> crate::Database {
 		let mut names = self.names.split(|&c| c == b'|')
 			.map(|s| unsafe { str::from_utf8_unchecked(s) })
 			.map(|s| s.trim())
 			.collect::<Vec<_>>();
 
-		let mut database = ::Database::new();
+		let mut database = crate::Database::new();
 
 		database
 			.name(names.remove(0))
@@ -244,9 +244,9 @@ mod test {
 	use std::io::Read;
 	use std::path::Path;
 	use super::*;
-	use capability as cap;
+	use crate::capability as cap;
 
-	fn load<P: AsRef<Path>, F: FnOnce(::Database)>(path: P, f: F) {
+	fn load<P: AsRef<Path>, F: FnOnce(crate::Database)>(path: P, f: F) {
 		let mut file   = File::open(path).unwrap();
 		let mut buffer = Vec::new();
 		file.read_to_end(&mut buffer).unwrap();

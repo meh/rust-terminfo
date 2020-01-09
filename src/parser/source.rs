@@ -15,9 +15,9 @@
 use std::borrow::Cow;
 use std::str;
 use nom::character::{is_digit, streaming::line_ending as eol};
-use parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
-use parser::util::{is_eol, is_ws, ws, end};
-use parser::util::unescape;
+use crate::parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
+use crate::parser::util::{is_eol, is_ws, ws, end};
+use crate::parser::util::unescape;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Item<'a> {
