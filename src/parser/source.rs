@@ -14,10 +14,10 @@
 
 use std::borrow::Cow;
 use std::str;
-use nom::{is_digit, eol};
-use parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
-use parser::util::{is_eol, is_ws, ws, end};
-use parser::util::unescape;
+use nom::character::{is_digit, streaming::line_ending as eol};
+use crate::parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
+use crate::parser::util::{is_eol, is_ws, ws, end};
+use crate::parser::util::unescape;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Item<'a> {
@@ -41,8 +41,8 @@ named!(pub parse<Item>,
 named!(comment<Item>,
 	do_parse!(
 		tag!("#") >>
-		content: map_res!(take_until_and_consume!("\n"), str::from_utf8) >>
-		take_while!(is_eol) >>
+		content: map_res!(terminated!(take_until!("\n"), tag!("\n")), str::from_utf8) >>
+		opt!(complete!(take_while!(is_eol))) >>
 
 		(Item::Comment(content.trim()))));
 
@@ -58,7 +58,7 @@ named!(definition<Item>,
 
 		tag!(",") >>
 		take_while!(is_ws) >>
-		eol >> take_while!(is_eol) >>
+		eol >> opt!(complete!(take_while!(is_eol))) >>
 
 		({
 			let mut aliases = content.split(|c| c == '|').map(|n| n.trim()).collect::<Vec<_>>();
@@ -79,7 +79,7 @@ named!(disable<Item>,
 			unsafe { str::from_utf8_unchecked(n) }) >>
 
 		tag!(",") >>
-		take_while!(is_ws) >> end >> take_while!(is_eol) >>
+		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
 
 		(Item::Disable(name))));
 
@@ -109,7 +109,7 @@ named!(entry<Item>,
 
 				(Item::String(name, unescape(value))))) >>
 
-		take_while!(is_ws) >> end >> take_while!(is_eol) >>
+		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
 
 		(value)));
 

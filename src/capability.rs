@@ -17,8 +17,8 @@
 use std::io::Write;
 use std::borrow::Cow;
 
-use expand::{Expand, Parameter, Context};
-use error;
+use crate::expand::{Expand, Parameter, Context};
+use crate::error;
 
 /// A trait for any object that will represent a terminal capability.
 pub trait Capability<'a>: Sized {
@@ -938,7 +938,7 @@ define!(string SetCursorColor => "Cs";
 
 #[cfg(test)]
 mod test {
-	use Database;
+	use crate::Database;
 	use super::*;
 
 	#[test]

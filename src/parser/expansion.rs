@@ -12,8 +12,8 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use nom::{is_digit};
-use parser::util::number;
+use nom::character::{is_digit};
+use crate::parser::util::number;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Item<'a> {

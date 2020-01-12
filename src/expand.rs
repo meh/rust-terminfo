@@ -15,8 +15,8 @@
 use std::char;
 use std::io::{BufWriter, Write};
 
-use error;
-use parser::expansion::*;
+use crate::error;
+use crate::parser::expansion::*;
 
 /// Trait for items that can be expanded.
 pub trait Expand {
