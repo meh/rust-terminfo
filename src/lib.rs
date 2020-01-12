@@ -16,7 +16,6 @@
 extern crate nom;
 extern crate phf;
 extern crate fnv;
-extern crate dirs;
 
 mod error;
 pub use crate::error::{Error, Result};

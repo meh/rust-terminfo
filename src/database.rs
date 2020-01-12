@@ -18,8 +18,6 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-
-use dirs;
 use fnv::FnvHasher;
 use dirs;
 
