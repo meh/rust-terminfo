@@ -151,41 +151,36 @@ impl Database {
 		let name  = name.as_ref();
 		let first = name.chars().next().ok_or(Error::NotFound)?;
 
+		// See https://manpages.debian.org/buster/ncurses-bin/terminfo.5.en.html#Fetching_Compiled_Descriptions
 		let mut search = Vec::<PathBuf>::new();
 
 		if let Some(dir) = env::var_os("TERMINFO") {
 			search.push(dir.into());
-		}
-
-		if let Ok(dirs) = env::var("TERMINFO_DIRS") {
-			for dir in dirs.split(':') {
-				if dir.is_empty() {
-					search.push("/usr/share/terminfo".into());
-				}
-				else {
-					search.push(dir.into());
-				}
-			}
-		}
-		else {
+		} else {
 			if let Some(mut home) = dirs::home_dir() {
 				home.push(".terminfo");
 				search.push(home.into());
 			}
-
-			// handle non-FHS systems like Termux
-			if let Ok(prefix) = env::var("PREFIX") {
-				let path = Path::new(&prefix);
-				search.push(path.join("etc/terminfo"));
-				search.push(path.join("lib/terminfo"));
-				search.push(path.join("share/terminfo"));
-			}
-
-			search.push("/etc/terminfo".into());
-			search.push("/lib/terminfo".into());
-			search.push("/usr/share/terminfo".into());
-			search.push("/boot/system/data/terminfo".into());
 		}
+
+		if let Ok(dirs) = env::var("TERMINFO_DIRS") {
+			for dir in dirs.split(':') {
+				search.push(dir.into());
+			}
+		}
+
+		// handle non-FHS systems like Termux
+		if let Ok(prefix) = env::var("PREFIX") {
+			let path = Path::new(&prefix);
+			search.push(path.join("etc/terminfo"));
+			search.push(path.join("lib/terminfo"));
+			search.push(path.join("share/terminfo"));
+		}
+
+		search.push("/etc/terminfo".into());
+		search.push("/lib/terminfo".into());
+		search.push("/usr/share/terminfo".into());
+		search.push("/boot/system/data/terminfo".into());
 
 		for path in search {
 			if fs::metadata(&path).is_err() {
