@@ -15,7 +15,7 @@ build = "build.rs"
 
 [dependencies]
 dirs = "2"
-nom = "5.0"
+nom = { version = "5.0", default-features = false, features = ["std"] }
 phf = "0.8"
 fnv = "1.0"
 
