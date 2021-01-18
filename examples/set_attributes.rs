@@ -1,7 +1,7 @@
 extern crate terminfo;
 
 use std::io;
-use terminfo::{Database, capability as cap};
+use terminfo::{capability as cap, Database};
 
 fn main() {
     let info = Database::from_env().unwrap();
@@ -9,7 +9,8 @@ fn main() {
     if let Some(set_attributes) = info.get::<cap::SetAttributes>() {
         let clear = info.get::<cap::ExitAttributeMode>().unwrap();
 
-        set_attributes.expand()
+        set_attributes
+            .expand()
             .bold(true)
             .underline(true)
             .to(io::stdout())

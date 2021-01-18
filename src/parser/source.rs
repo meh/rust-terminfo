@@ -12,85 +12,95 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use crate::parser::util::unescape;
+use crate::parser::util::{end, is_eol, is_ws, ws};
+use crate::parser::util::{is_printable_no_comma, is_printable_no_control, is_printable_no_pipe};
+use nom::character::{is_digit, streaming::line_ending as eol};
 use std::borrow::Cow;
 use std::str;
-use nom::character::{is_digit, streaming::line_ending as eol};
-use crate::parser::util::{is_printable_no_pipe, is_printable_no_comma, is_printable_no_control};
-use crate::parser::util::{is_eol, is_ws, ws, end};
-use crate::parser::util::unescape;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Item<'a> {
-	Comment(&'a str),
+    Comment(&'a str),
 
-	Definition {
-		name:        &'a str,
-		aliases:     Vec<&'a str>,
-		description: &'a str,
-	},
+    Definition {
+        name: &'a str,
+        aliases: Vec<&'a str>,
+        description: &'a str,
+    },
 
-	True(&'a str),
-	Number(&'a str, i16),
-	String(&'a str, Cow<'a, [u8]>),
-	Disable(&'a str),
+    True(&'a str),
+    Number(&'a str, i16),
+    String(&'a str, Cow<'a, [u8]>),
+    Disable(&'a str),
 }
 
 named!(pub parse<Item>,
 	alt!(comment | definition | disable | entry));
 
-named!(comment<Item>,
-	do_parse!(
-		tag!("#") >>
-		content: map_res!(terminated!(take_until!("\n"), tag!("\n")), str::from_utf8) >>
-		opt!(complete!(take_while!(is_eol))) >>
+named!(
+    comment<Item>,
+    do_parse!(
+        tag!("#")
+            >> content: map_res!(terminated!(take_until!("\n"), tag!("\n")), str::from_utf8)
+            >> opt!(complete!(take_while!(is_eol)))
+            >> (Item::Comment(content.trim()))
+    )
+);
 
-		(Item::Comment(content.trim()))));
+named!(
+    definition<Item>,
+    do_parse!(
+        name: map!(take_while!(is_printable_no_pipe), |n| unsafe {
+            str::from_utf8_unchecked(n)
+        }) >> tag!("|")
+            >> content: map!(take_while!(is_printable_no_comma), |n| unsafe {
+                str::from_utf8_unchecked(n)
+            })
+            >> tag!(",")
+            >> take_while!(is_ws)
+            >> eol
+            >> opt!(complete!(take_while!(is_eol)))
+            >> ({
+                let mut aliases = content
+                    .split(|c| c == '|')
+                    .map(|n| n.trim())
+                    .collect::<Vec<_>>();
 
-named!(definition<Item>,
-	do_parse!(
-		name: map!(take_while!(is_printable_no_pipe), |n|
-			unsafe { str::from_utf8_unchecked(n) }) >>
+                Item::Definition {
+                    name: name,
+                    description: aliases.pop().unwrap(),
+                    aliases: aliases,
+                }
+            })
+    )
+);
 
-		tag!("|") >>
+named!(
+    disable<Item>,
+    do_parse!(
+        ws >> take_while!(is_ws)
+            >> tag!("@")
+            >> name: map!(take_while!(is_printable_no_control), |n| unsafe {
+                str::from_utf8_unchecked(n)
+            })
+            >> tag!(",")
+            >> take_while!(is_ws)
+            >> end
+            >> opt!(complete!(take_while!(is_eol)))
+            >> (Item::Disable(name))
+    )
+);
 
-		content: map!(take_while!(is_printable_no_comma), |n|
-			unsafe { str::from_utf8_unchecked(n) }) >>
-
-		tag!(",") >>
-		take_while!(is_ws) >>
-		eol >> opt!(complete!(take_while!(is_eol))) >>
-
-		({
-			let mut aliases = content.split(|c| c == '|').map(|n| n.trim()).collect::<Vec<_>>();
-
-			Item::Definition {
-				name:        name,
-				description: aliases.pop().unwrap(),
-				aliases:     aliases,
-			}
-		})));
-
-named!(disable<Item>,
-	do_parse!(
-		ws >> take_while!(is_ws) >>
-		tag!("@") >>
-
-		name: map!(take_while!(is_printable_no_control), |n|
-			unsafe { str::from_utf8_unchecked(n) }) >>
-
-		tag!(",") >>
-		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
-
-		(Item::Disable(name))));
-
-named!(entry<Item>,
-	do_parse!(
-		ws >> take_while!(is_ws) >>
-
-		name: map!(take_while!(is_printable_no_control), |n|
-			unsafe { str::from_utf8_unchecked(n) }) >>
-
-		value: switch!(take!(1),
+named!(
+    entry<Item>,
+    do_parse!(
+        ws >> take_while!(is_ws)
+            >> name: map!(take_while!(is_printable_no_control), |n| unsafe {
+                str::from_utf8_unchecked(n)
+            })
+            >> value:
+                switch!(take!(1),
 			b"," => value!(
 				Item::True(name)) |
 
@@ -107,38 +117,37 @@ named!(entry<Item>,
 
 				tag!(",") >>
 
-				(Item::String(name, unescape(value))))) >>
-
-		take_while!(is_ws) >> end >> opt!(complete!(take_while!(is_eol))) >>
-
-		(value)));
+				(Item::String(name, unescape(value)))))
+            >> take_while!(is_ws)
+            >> end
+            >> opt!(complete!(take_while!(is_eol)))
+            >> (value)
+    )
+);
 
 #[cfg(test)]
 mod test {
-	use super::*;
+    use super::*;
 
-	use std::fs::File;
-	use std::io::Read;
+    use std::fs::File;
+    use std::io::Read;
 
-	#[test]
-	fn parsing() {
-		let mut file   = File::open("tests/xterm.terminfo").unwrap();
-		let mut buffer = Vec::new();
-		file.read_to_end(&mut buffer).unwrap();
+    #[test]
+    fn parsing() {
+        let mut file = File::open("tests/xterm.terminfo").unwrap();
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer).unwrap();
 
-		let mut input = &buffer[..];
+        let mut input = &buffer[..];
 
-		while !input.is_empty() {
-			match parse(input) {
-				Ok((rest, _)) =>
-					input = rest,
+        while !input.is_empty() {
+            match parse(input) {
+                Ok((rest, _)) => input = rest,
 
-				Err(::nom::Err::Incomplete(_)) =>
-					panic!("incomplete"),
+                Err(::nom::Err::Incomplete(_)) => panic!("incomplete"),
 
-				Err(err) =>
-					panic!("parsing: {:?}", err),
-			}
-		}
-	}
+                Err(err) => panic!("parsing: {:?}", err),
+            }
+        }
+    }
 }
