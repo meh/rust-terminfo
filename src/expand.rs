@@ -423,11 +423,11 @@ impl Expand for [u8] {
 
 					macro_rules! w {
 						($value:expr) => (
-							output.write_all($value)?;
+							output.write_all($value)?
 						);
 
 						($($item:tt)*) => (
-							write!(output, $($item)*)?;
+							write!(output, $($item)*)?
 						);
 					}
 

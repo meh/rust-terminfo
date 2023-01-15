@@ -59,33 +59,30 @@ impl From<Expand> for Error {
 
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> ::std::result::Result<(), fmt::Error> {
-		f.write_str(error::Error::description(self))
-	}
-}
-
-impl error::Error for Error {
-	fn description(&self) -> &str {
 		match *self {
 			Error::Io(ref err) =>
-				err.description(),
+        err.fmt(f),
 
 			Error::NotFound =>
-				"Capability database not found.",
+				f.write_str(&"Capability database not found."),
 
 			Error::Parse =>
-				"Failed to parse capability database.",
+				f.write_str("Failed to parse capability database."),
 
 			Error::Expand(ref err) =>
 				match *err {
 					Expand::Invalid =>
-						"The expansion string is invalid.",
+						f.write_str("The expansion string is invalid."),
 
 					Expand::StackUnderflow =>
-						"Not enough elements on the stack.",
+						f.write_str("Not enough elements on the stack."),
 
 					Expand::TypeMismatch =>
-						"Type mismatch.",
+						f.write_str("Type mismatch.")
 				},
 		}
+
 	}
 }
+
+impl error::Error for Error { }
