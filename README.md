@@ -4,28 +4,13 @@ terminfo
 
 Terminal capabilities with type-safe getters.
 
-Usage
------
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-terminfo = "0.1"
-```
-
-and this to your crate root:
-
-```rust
-extern crate terminfo;
-```
-
 Example
 -------
 ```rust
 extern crate terminfo;
 
-use std::io::{self, Write};
-use terminfo::{Expand, Database, capability as cap};
+use std::io;
+use terminfo::{Database, capability as cap};
 
 fn main() {
   let info = Database::from_env().unwrap();
@@ -38,11 +23,16 @@ fn main() {
   }
 
   if let Some(flash) = info.get::<cap::FlashScreen>() {
-    io::stdout().write_all(&flash.expand(&[], &mut Default::default()).unwrap()).unwrap();
+		flash.expand().to(io::stdout()).unwrap();
   }
-  else {
-    println!("FLASH GORDON!");
-  }
+	else {
+		println!("FLASH GORDON!");
+	}
+
+	info.get::<cap::SetAForeground>().unwrap().expand().color(2).to(io::stdout()).unwrap();
+	info.get::<cap::SetABackground>().unwrap().expand().color(4).to(io::stdout()).unwrap();
+	println!("SUP");
+	info.get::<cap::ExitAttributeMode>().unwrap().expand().to(io::stdout()).unwrap();
 }
 ```
 
