@@ -30,6 +30,7 @@ const COMMA:   u8 = 0b010000;
 const EOL:     u8 = 0b100000;
 
 // Ugly table of DOOM, gotta run and gun.
+#[rustfmt::skip]
 static ASCII: [u8; 256] = [
 	NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
 	NONE, SPACE, EOL, NONE, NONE, EOL, NONE, NONE,

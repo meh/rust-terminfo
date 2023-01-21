@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+#[rustfmt::skip]
 const BOOLEAN: &'static [&'static str] = &[
 	"auto_left_margin", "auto_right_margin", "no_esc_ctlc", "ceol_standout_glitch",
 	"eat_newline_glitch", "erase_overstrike", "generic_type", "hard_copy", "has_meta_key",
@@ -18,6 +19,7 @@ const BOOLEAN: &'static [&'static str] = &[
 	"gnu_has_meta_key", "linefeed_is_newline", "has_hardware_tabs", "return_does_clr_eol"
 ];
 
+#[rustfmt::skip]
 const NUMBER: &'static [&'static str] = &[
 	"columns", "init_tabs", "lines", "lines_of_memory", "magic_cookie_glitch", "padding_baud_rate",
 	"virtual_terminal", "width_status_line", "num_labels", "label_height", "label_width",
@@ -30,6 +32,7 @@ const NUMBER: &'static [&'static str] = &[
 	"number_of_function_keys"
 ];
 
+#[rustfmt::skip]
 const STRING: &'static [&'static str] = &[
 	"back_tab", "bell", "carriage_return", "change_scroll_region", "clear_all_tabs",
 	"clear_screen", "clr_eol", "clr_eos", "column_address", "command_character", "cursor_address",
