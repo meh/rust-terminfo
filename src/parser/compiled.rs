@@ -119,32 +119,6 @@ fn bit_size(magic: &[u8]) -> usize {
 	}
 }
 
-macro_rules! cond_reduce(
-	($i:expr, $cond:expr, $submac:ident!( $($args:tt)* )) => (
-		{
-			use nom::lib::std::result::Result::*;
-			use nom::{Err,error::ErrorKind,IResult};
-			let default_err = Err(Err::convert(Err::Error(error_position!($i, ErrorKind::MapRes))));
-
-			if $cond {
-				let sub_res = $submac!($i, $($args)*);
-				fn unify_types<I,O,E>(_: &IResult<I,O,E>, _: &IResult<I,O,E>) {}
-				unify_types(&sub_res, &default_err);
-
-				match sub_res {
-					Ok((i,o)) => Ok((i, o)),
-					Err(e)    => Err(e),
-				}
-			} else {
-				default_err
-			}
-		}
-	);
-	($i:expr, $cond:expr, $f:expr) => (
-		cond_reduce!($i, $cond, call!($f));
-	);
-);
-
 named!(pub parse<Database>,
 	do_parse!(
 		magic: alt!(tag!([0x1A, 0x01]) | tag!([0x1E, 0x02])) >>
@@ -232,11 +206,15 @@ named!(size<usize>,
 
 named_args!(capability(bits: usize)<i32>,
 	alt!(
-		cond_reduce!(bits == 16,
-			map_opt!(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })) |
+		map_opt!(
+			cond!(bits == 16,
+				map_opt!(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })),
+			|o| o) |
 
-		cond_reduce!(bits == 32,
-			map_opt!(le_i32, |n| if n >= -2 { Some(n) } else { None }))));
+		map_opt!(
+			cond!(bits == 32,
+				map_opt!(le_i32, |n| if n >= -2 { Some(n) } else { None })),
+			|o| o)));
 
 #[cfg(test)]
 mod test {
