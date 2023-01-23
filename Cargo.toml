@@ -15,7 +15,7 @@ build = "build.rs"
 
 [dependencies]
 dirs = "4"
-nom = { version = "6", default-features = false, features = ["std"] }
+nom = { version = "7", default-features = false, features = ["std"] }
 phf = "0.11"
 fnv = "1.0"
 
