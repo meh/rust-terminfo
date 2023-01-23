@@ -12,6 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use nom::bytes::complete;
 use nom::character::{is_digit};
 use crate::parser::util::number;
 
@@ -112,7 +113,7 @@ named!(pub parse<Item>,
 	alt!(expansion | string));
 
 named!(string<Item>,
-	map!(take_until_or_eof!("%"), |s| Item::String(s)));
+	map!(complete::take_till(|b| b == b'%'), |s| Item::String(s)));
 
 named!(expansion<Item>,
 	do_parse!(
