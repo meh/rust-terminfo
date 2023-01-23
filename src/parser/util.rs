@@ -17,33 +17,6 @@ use std::u8;
 use std::borrow::Cow;
 use nom::character::{streaming::line_ending as eol, is_digit};
 
-macro_rules! take_until_or_eof (
-  ($i:expr, $substr:expr) => (
-    {
-      use $crate::nom::InputLength;
-      use $crate::nom::FindSubstring;
-      use $crate::nom::Slice;
-
-      let ret: $crate::nom::IResult<_, _> = if $substr.input_len() > $i.input_len() {
-        Err($crate::nom::Err::Incomplete($crate::nom::Needed::Size($substr.input_len())))
-      }
-			else {
-        match ($i).find_substring($substr) {
-          None => {
-            Ok(($i.slice(0..0), $i))
-          },
-
-          Some(index) => {
-            Ok(($i.slice(index..), $i.slice(0..index)))
-          },
-        }
-      };
-
-      ret
-    }
-  );
-);
-
 const NONE:    u8 = 0b000000;
 const PRINT:   u8 = 0b000001;
 const SPACE:   u8 = 0b000010;
