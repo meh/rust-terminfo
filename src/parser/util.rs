@@ -15,7 +15,11 @@
 use std::str;
 use std::u8;
 use std::borrow::Cow;
+use nom::branch::alt;
 use nom::character::{streaming::line_ending as eol, is_digit};
+use nom::character::streaming::char;
+use nom::combinator::eof;
+use nom::IResult;
 
 const NONE:    u8 = 0b000000;
 const PRINT:   u8 = 0b000001;
@@ -86,11 +90,13 @@ pub fn is_printable_no_control(ch: u8) -> bool {
 	unsafe { ASCII.get_unchecked(ch as usize) & (PRINT | CONTROL) == PRINT }
 }
 
-named!(pub ws<char>,
-	alt!(char!(' ') | char!('\t')));
+pub fn ws(input: &[u8]) -> IResult<&[u8], char> {
+	alt((char(' '), char('\t')))(input)
+}
 
-named!(pub end,
-	alt!(eof!() | eol));
+pub fn end(input: &[u8]) -> IResult<&[u8], &[u8]> {
+	alt((eof, eol))(input)
+}
 
 #[inline]
 pub fn number(i: &[u8]) -> i32 {

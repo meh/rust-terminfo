@@ -12,7 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#[macro_use]
 extern crate nom;
 extern crate phf;
 extern crate fnv;
