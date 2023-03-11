@@ -12,13 +12,12 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-///! Standard capabilities.
-
-use std::io::Write;
 use std::borrow::Cow;
+///! Standard capabilities.
+use std::io::Write;
 
-use crate::expand::{Expand, Parameter, Context};
 use crate::error;
+use crate::expand::{Context, Expand, Parameter};
 
 /// A trait for any object that will represent a terminal capability.
 pub trait Capability<'a>: Sized {
@@ -48,8 +47,8 @@ pub enum Value {
 /// Expansion helper struct.
 #[derive(Debug)]
 pub struct Expansion<'a, T: 'a + AsRef<[u8]>> {
-	string:  &'a T,
-	params:  [Parameter; 9],
+	string: &'a T,
+	params: [Parameter; 9],
 	context: Option<&'a mut Context>,
 }
 
@@ -62,8 +61,11 @@ impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
 
 	/// Expand to the given output.
 	pub fn to<W: Write>(self, output: W) -> error::Result<()> {
-		self.string.as_ref().expand(output, &self.params,
-			self.context.unwrap_or(&mut Default::default()))
+		self.string.as_ref().expand(
+			output,
+			&self.params,
+			self.context.unwrap_or(&mut Default::default()),
+		)
 	}
 
 	/// Expand into a vector.
@@ -75,29 +77,29 @@ impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
 }
 
 macro_rules! from {
-	(number $ty:ty) => (
+	(number $ty:ty) => {
 		impl From<$ty> for Value {
 			fn from(value: $ty) -> Self {
 				Value::Number(value as i32)
 			}
 		}
-	);
+	};
 
-	(string ref $ty:ty) => (
+	(string ref $ty:ty) => {
 		impl<'a> From<&'a $ty> for Value {
 			fn from(value: &'a $ty) -> Self {
 				Value::String(value.into())
 			}
 		}
-	);
+	};
 
-	(string $ty:ty) => (
+	(string $ty:ty) => {
 		impl From<$ty> for Value {
 			fn from(value: $ty) -> Self {
 				Value::String(value.into())
 			}
 		}
-	);
+	};
 }
 
 impl From<()> for Value {
@@ -938,29 +940,61 @@ define!(string SetCursorColor => "Cs";
 
 #[cfg(test)]
 mod test {
-	use crate::Database;
 	use super::*;
+	use crate::Database;
 
 	#[test]
 	fn cursor_address() {
-		assert_eq!(b"\x1B[3;5H".to_vec(),
-			Database::from_path("tests/cancer-256color").unwrap()
-				.get::<CursorAddress>().unwrap()
-				.expand().parameters(2, 4).to_vec().unwrap());
+		assert_eq!(
+			b"\x1B[3;5H".to_vec(),
+			Database::from_path("tests/cancer-256color")
+				.unwrap()
+				.get::<CursorAddress>()
+				.unwrap()
+				.expand()
+				.parameters(2, 4)
+				.to_vec()
+				.unwrap()
+		);
 
-		assert_eq!(b"\x1B[3;5H".to_vec(),
-			Database::from_path("tests/cancer-256color").unwrap()
-				.get::<CursorAddress>().unwrap()
-				.expand().x(4).y(2).to_vec().unwrap());
+		assert_eq!(
+			b"\x1B[3;5H".to_vec(),
+			Database::from_path("tests/cancer-256color")
+				.unwrap()
+				.get::<CursorAddress>()
+				.unwrap()
+				.expand()
+				.x(4)
+				.y(2)
+				.to_vec()
+				.unwrap()
+		);
 
-		assert_eq!(b"\x1B[38;2;50;100;150m".to_vec(),
-			Database::from_path("tests/cancer-256color").unwrap()
-				.get::<SetTrueColorForeground>().unwrap()
-				.expand().r(50).g(100).b(150).to_vec().unwrap());
+		assert_eq!(
+			b"\x1B[38;2;50;100;150m".to_vec(),
+			Database::from_path("tests/cancer-256color")
+				.unwrap()
+				.get::<SetTrueColorForeground>()
+				.unwrap()
+				.expand()
+				.r(50)
+				.g(100)
+				.b(150)
+				.to_vec()
+				.unwrap()
+		);
 
-		assert_eq!(b"\x1B]clipboard:set:PRIMARY:hue\x07".to_vec(),
-			Database::from_path("tests/cancer-256color").unwrap()
-				.get::<SetClipboard>().unwrap()
-				.expand().selection("PRIMARY").content("hue").to_vec().unwrap());
+		assert_eq!(
+			b"\x1B]clipboard:set:PRIMARY:hue\x07".to_vec(),
+			Database::from_path("tests/cancer-256color")
+				.unwrap()
+				.get::<SetClipboard>()
+				.unwrap()
+				.expand()
+				.selection("PRIMARY")
+				.content("hue")
+				.to_vec()
+				.unwrap()
+		);
 	}
 }

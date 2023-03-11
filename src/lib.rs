@@ -12,9 +12,9 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+extern crate fnv;
 extern crate nom;
 extern crate phf;
-extern crate fnv;
 
 mod error;
 pub use crate::error::{Error, Result};

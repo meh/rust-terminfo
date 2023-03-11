@@ -12,15 +12,15 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use crate::parser::util::number;
 use nom::branch::alt;
 use nom::bytes::complete;
 use nom::bytes::streaming::{tag, take, take_while};
-use nom::character::{is_digit};
+use nom::character::is_digit;
 use nom::character::streaming::one_of;
 use nom::combinator::{map, opt, value};
 use nom::error::{make_error, ErrorKind};
 use nom::IResult;
-use crate::parser::util::number;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Item<'a> {
@@ -89,7 +89,7 @@ pub enum Conditional {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Print {
-	pub flags:  Flags,
+	pub flags: Flags,
 	pub format: Format,
 }
 
@@ -106,13 +106,13 @@ pub enum Format {
 
 #[derive(Eq, PartialEq, Copy, Clone, Default, Debug)]
 pub struct Flags {
-	pub width:     usize,
+	pub width: usize,
 	pub precision: usize,
 
 	pub alternate: bool,
-	pub left:      bool,
-	pub sign:      bool,
-	pub space:     bool,
+	pub left: bool,
+	pub sign: bool,
+	pub space: bool,
 }
 
 pub fn parse(input: &[u8]) -> IResult<&[u8], Item> {
@@ -159,24 +159,24 @@ fn variable(input: &[u8]) -> IResult<&[u8], Item> {
 	match c {
 		b"l" => Ok((input, Item::Variable(Variable::Length))),
 
-		b"p" => map(one_of("123456789"), |n|
-			Item::Variable(Variable::Push(n as u8 - b'1'))
-		)(input),
+		b"p" => map(one_of("123456789"), |n| Item::Variable(Variable::Push(n as u8 - b'1')))(input),
 
 		b"P" => alt((
-			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n|
-				Item::Variable(Variable::Set(true, n as u8 - b'a'))),
-
-			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n|
-				Item::Variable(Variable::Set(false, n as u8 - b'A'))),
+			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n| {
+				Item::Variable(Variable::Set(true, n as u8 - b'a'))
+			}),
+			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n| {
+				Item::Variable(Variable::Set(false, n as u8 - b'A'))
+			}),
 		))(input),
 
 		b"g" => alt((
-			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n|
-				Item::Variable(Variable::Get(true, n as u8 - b'a'))),
-
-			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n|
-				Item::Variable(Variable::Get(false, n as u8 - b'A'))),
+			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n| {
+				Item::Variable(Variable::Get(true, n as u8 - b'a'))
+			}),
+			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n| {
+				Item::Variable(Variable::Get(false, n as u8 - b'A'))
+			}),
 		))(input),
 
 		_ => Err(nom::Err::Error(make_error(input, ErrorKind::Switch))),
@@ -236,28 +236,31 @@ fn print(input: &[u8]) -> IResult<&[u8], Item> {
 
 	let (input, format) = one_of("doxXsc")(input)?;
 
-	Ok((input, Item::Print(Print {
-		flags: Flags {
-			width:     number(width.unwrap_or(b"0")) as usize,
-			precision: number(precision.unwrap_or(b"0")) as usize,
+	Ok((
+		input,
+		Item::Print(Print {
+			flags: Flags {
+				width: number(width.unwrap_or(b"0")) as usize,
+				precision: number(precision.unwrap_or(b"0")) as usize,
 
-			alternate: flags.contains(&b'#'),
-			left:      flags.contains(&b'-'),
-			sign:      flags.contains(&b'+'),
-			space:     flags.contains(&b' '),
-		},
+				alternate: flags.contains(&b'#'),
+				left: flags.contains(&b'-'),
+				sign: flags.contains(&b'+'),
+				space: flags.contains(&b' '),
+			},
 
-		format: match format {
-			'd' => Format::Dec,
-			'o' => Format::Oct,
-			'x' => Format::Hex,
-			'X' => Format::HEX,
-			's' => Format::Str,
-			'c' => Format::Chr,
-			'u' => Format::Uni,
-			_   => unreachable!(),
-		}
-	})))
+			format: match format {
+				'd' => Format::Dec,
+				'o' => Format::Oct,
+				'x' => Format::Hex,
+				'X' => Format::HEX,
+				's' => Format::Str,
+				'c' => Format::Chr,
+				'u' => Format::Uni,
+				_ => unreachable!(),
+			},
+		}),
+	))
 }
 
 fn is_flag(i: u8) -> bool {

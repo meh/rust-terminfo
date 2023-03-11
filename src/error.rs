@@ -12,9 +12,9 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::io;
 use std::error;
 use std::fmt;
+use std::io;
 
 #[derive(Debug)]
 pub enum Error {
@@ -60,29 +60,21 @@ impl From<Expand> for Error {
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> ::std::result::Result<(), fmt::Error> {
 		match *self {
-			Error::Io(ref err) =>
-        err.fmt(f),
+			Error::Io(ref err) => err.fmt(f),
 
-			Error::NotFound =>
-				f.write_str(&"Capability database not found."),
+			Error::NotFound => f.write_str(&"Capability database not found."),
 
-			Error::Parse =>
-				f.write_str("Failed to parse capability database."),
+			Error::Parse => f.write_str("Failed to parse capability database."),
 
-			Error::Expand(ref err) =>
-				match *err {
-					Expand::Invalid =>
-						f.write_str("The expansion string is invalid."),
+			Error::Expand(ref err) => match *err {
+				Expand::Invalid => f.write_str("The expansion string is invalid."),
 
-					Expand::StackUnderflow =>
-						f.write_str("Not enough elements on the stack."),
+				Expand::StackUnderflow => f.write_str("Not enough elements on the stack."),
 
-					Expand::TypeMismatch =>
-						f.write_str("Type mismatch.")
-				},
+				Expand::TypeMismatch => f.write_str("Type mismatch."),
+			},
 		}
-
 	}
 }
 
-impl error::Error for Error { }
+impl error::Error for Error {}
