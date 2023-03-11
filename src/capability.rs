@@ -12,8 +12,9 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+//! Standard capabilities.
+
 use std::borrow::Cow;
-///! Standard capabilities.
 use std::io::Write;
 
 use crate::error;
