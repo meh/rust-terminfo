@@ -136,36 +136,33 @@ pub struct Context {
 #[macro_export]
 macro_rules! expand {
 	($value:expr) => (
-		expand!($value;)
+		$crate::expand!($value;)
 	);
 
 	($value:expr => $context:expr) => (
-		expand!($value => $context;)
+		$crate::expand!($value => $context;)
 	);
 
 	($value:expr; $($item:expr),*) => (
-		expand!($value => &mut Default::default(); $($item),*)
+		$crate::expand!($value => &mut ::std::default::Default::default(); $($item),*)
 	);
 
 	($value:expr => $context:expr; $($item:expr),*) => ({
-		let mut output = Vec::new();
+		let mut output = ::std::vec::Vec::new();
 
-		match expand!(&mut output, $value => $context; $($item),*) {
-			Ok(()) => Ok(output),
-			Err(e) => Err(e)
-		}
+		$crate::expand!(&mut output, $value => $context; $($item),*).map(|()| output)
 	});
 
 	($output:expr, $value:expr) => (
-		expand!($output, $value;)
+		$crate::expand!($output, $value;)
 	);
 
 	($output:expr, $value:expr => $context:expr) => (
-		expand!($output, $value => $context;)
+		$crate::expand!($output, $value => $context;)
 	);
 
 	($output:expr, $value:expr; $($item:expr),*) => (
-		expand!($output, $value => &mut Default::default(); $($item),*)
+		$crate::expand!($output, $value => &mut ::std::default::Default::default(); $($item),*)
 	);
 
 	($output:expr, $value:expr => $context:expr; $($item:expr),*) => ({
