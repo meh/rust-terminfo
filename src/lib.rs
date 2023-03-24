@@ -12,6 +12,10 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+extern {}
+
 extern crate fnv;
 extern crate nom;
 extern crate phf;
