@@ -12,8 +12,15 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use nom::character::{is_digit};
 use crate::parser::util::number;
+use nom::branch::alt;
+use nom::bytes::complete;
+use nom::bytes::streaming::{tag, take, take_while};
+use nom::character::is_digit;
+use nom::character::streaming::one_of;
+use nom::combinator::{map, opt, value};
+use nom::error::{make_error, ErrorKind};
+use nom::IResult;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Item<'a> {
@@ -82,7 +89,7 @@ pub enum Conditional {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Print {
-	pub flags:  Flags,
+	pub flags: Flags,
 	pub format: Format,
 }
 
@@ -99,123 +106,147 @@ pub enum Format {
 
 #[derive(Eq, PartialEq, Copy, Clone, Default, Debug)]
 pub struct Flags {
-	pub width:     usize,
+	pub width: usize,
 	pub precision: usize,
 
 	pub alternate: bool,
-	pub left:      bool,
-	pub sign:      bool,
-	pub space:     bool,
+	pub left: bool,
+	pub sign: bool,
+	pub space: bool,
 }
 
-named!(pub parse<Item>,
-	alt!(expansion | string));
+pub fn parse(input: &[u8]) -> IResult<&[u8], Item> {
+	alt((expansion, string))(input)
+}
 
-named!(string<Item>,
-	map!(take_until_or_eof!("%"), |s| Item::String(s)));
+fn string(input: &[u8]) -> IResult<&[u8], Item> {
+	map(complete::take_till(|b| b == b'%'), |s| Item::String(s))(input)
+}
 
-named!(expansion<Item>,
-	do_parse!(
-		tag!("%") >>
-		item: alt!(percent | constant | variable | operation | conditional | print) >>
+fn expansion(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, _) = tag("%")(input)?;
+	let (input, item) = alt((percent, constant, variable, operation, conditional, print))(input)?;
 
-		(item)));
+	Ok((input, item))
+}
 
-named!(percent<Item>,
-	value!(Item::String(b"%"), tag!("%")));
+fn percent(input: &[u8]) -> IResult<&[u8], Item> {
+	value(Item::String(b"%"), tag("%"))(input)
+}
 
-named!(constant<Item>,
-	alt!(constant_char | constant_integer));
+fn constant(input: &[u8]) -> IResult<&[u8], Item> {
+	alt((constant_char, constant_integer))(input)
+}
 
-named!(constant_char<Item>,
-	do_parse!(
-		tag!("'") >>
-		ch: take!(1) >>
-		tag!("'") >>
+fn constant_char(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, _) = tag("'")(input)?;
+	let (input, ch) = take(1_usize)(input)?;
+	let (input, _) = tag("'")(input)?;
 
-		(Item::Constant(Constant::Character(ch[0])))));
+	Ok((input, Item::Constant(Constant::Character(ch[0]))))
+}
 
-named!(constant_integer<Item>,
-	do_parse!(
-		tag!("{") >>
-		digit: take_while!(is_digit) >>
-		tag!("}") >>
+fn constant_integer(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, _) = tag("{")(input)?;
+	let (input, digit) = take_while(is_digit)(input)?;
+	let (input, _) = tag("}")(input)?;
 
-		(Item::Constant(Constant::Integer(number(digit))))));
+	Ok((input, Item::Constant(Constant::Integer(number(digit)))))
+}
 
-named!(variable<Item>,
-	switch!(take!(1),
-		b"l" => value!(Item::Variable(Variable::Length)) |
+fn variable(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, c) = take(1_usize)(input)?;
+	match c {
+		b"l" => Ok((input, Item::Variable(Variable::Length))),
 
-		b"p" => map!(one_of!("123456789"), |n|
-			Item::Variable(Variable::Push(n as u8 - b'1'))) |
+		b"p" => map(one_of("123456789"), |n| Item::Variable(Variable::Push(n as u8 - b'1')))(input),
 
-		b"P" => alt!(
-			one_of!("abcdefghijklmnopqrstuvwxyz") => { |n|
-				Item::Variable(Variable::Set(true, n as u8 - b'a')) } |
+		b"P" => alt((
+			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n| {
+				Item::Variable(Variable::Set(true, n as u8 - b'a'))
+			}),
+			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n| {
+				Item::Variable(Variable::Set(false, n as u8 - b'A'))
+			}),
+		))(input),
 
-			one_of!("ABCDEFGHIJKLMNOPQRSTUVWXYZ") => { |n|
-				Item::Variable(Variable::Set(false, n as u8 - b'A')) }) |
+		b"g" => alt((
+			map(one_of("abcdefghijklmnopqrstuvwxyz"), |n| {
+				Item::Variable(Variable::Get(true, n as u8 - b'a'))
+			}),
+			map(one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), |n| {
+				Item::Variable(Variable::Get(false, n as u8 - b'A'))
+			}),
+		))(input),
 
-		b"g" => alt!(
-			one_of!("abcdefghijklmnopqrstuvwxyz") => { |n|
-				Item::Variable(Variable::Get(true, n as u8 - b'a')) } |
+		_ => Err(nom::Err::Error(make_error(input, ErrorKind::Switch))),
+	}
+}
 
-			one_of!("ABCDEFGHIJKLMNOPQRSTUVWXYZ") => { |n|
-				Item::Variable(Variable::Get(false, n as u8 - b'A')) })));
+fn operation(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, c) = take(1_usize)(input)?;
+	match c {
+		b"+" => Ok((input, Item::Operation(Operation::Binary(Binary::Add)))),
+		b"-" => Ok((input, Item::Operation(Operation::Binary(Binary::Subtract)))),
+		b"*" => Ok((input, Item::Operation(Operation::Binary(Binary::Multiply)))),
+		b"/" => Ok((input, Item::Operation(Operation::Binary(Binary::Divide)))),
+		b"m" => Ok((input, Item::Operation(Operation::Binary(Binary::Remainder)))),
+		b"i" => Ok((input, Item::Operation(Operation::Increment))),
 
-named!(operation<Item>,
-	switch!(take!(1),
-		b"+" => value!(Item::Operation(Operation::Binary(Binary::Add))) |
-		b"-" => value!(Item::Operation(Operation::Binary(Binary::Subtract))) |
-		b"*" => value!(Item::Operation(Operation::Binary(Binary::Multiply))) |
-		b"/" => value!(Item::Operation(Operation::Binary(Binary::Divide))) |
-		b"m" => value!(Item::Operation(Operation::Binary(Binary::Remainder))) |
-		b"i" => value!(Item::Operation(Operation::Increment)) |
+		b"&" => Ok((input, Item::Operation(Operation::Binary(Binary::AND)))),
+		b"|" => Ok((input, Item::Operation(Operation::Binary(Binary::OR)))),
+		b"^" => Ok((input, Item::Operation(Operation::Binary(Binary::XOR)))),
+		b"~" => Ok((input, Item::Operation(Operation::Unary(Unary::NOT)))),
 
-		b"&" => value!(Item::Operation(Operation::Binary(Binary::AND))) |
-		b"|" => value!(Item::Operation(Operation::Binary(Binary::OR))) |
-		b"^" => value!(Item::Operation(Operation::Binary(Binary::XOR))) |
-		b"~" => value!(Item::Operation(Operation::Unary(Unary::NOT))) |
+		b"A" => Ok((input, Item::Operation(Operation::Binary(Binary::And)))),
+		b"O" => Ok((input, Item::Operation(Operation::Binary(Binary::Or)))),
+		b"!" => Ok((input, Item::Operation(Operation::Unary(Unary::Not)))),
 
-		b"A" => value!(Item::Operation(Operation::Binary(Binary::And))) |
-		b"O" => value!(Item::Operation(Operation::Binary(Binary::Or))) |
-		b"!" => value!(Item::Operation(Operation::Unary(Unary::Not))) |
+		b"=" => Ok((input, Item::Operation(Operation::Binary(Binary::Equal)))),
+		b">" => Ok((input, Item::Operation(Operation::Binary(Binary::Greater)))),
+		b"<" => Ok((input, Item::Operation(Operation::Binary(Binary::Lesser)))),
 
-		b"=" => value!(Item::Operation(Operation::Binary(Binary::Equal))) |
-		b">" => value!(Item::Operation(Operation::Binary(Binary::Greater))) |
-		b"<" => value!(Item::Operation(Operation::Binary(Binary::Lesser)))));
+		_ => Err(nom::Err::Error(make_error(input, ErrorKind::Switch))),
+	}
+}
 
-named!(conditional<Item>,
-	switch!(take!(1),
-		b"?" => value!(Item::Conditional(Conditional::If)) |
-		b"t" => value!(Item::Conditional(Conditional::Then)) |
-		b"e" => value!(Item::Conditional(Conditional::Else)) |
-		b";" => value!(Item::Conditional(Conditional::End))));
+fn conditional(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, c) = take(1_usize)(input)?;
+	match c {
+		b"?" => Ok((input, Item::Conditional(Conditional::If))),
+		b"t" => Ok((input, Item::Conditional(Conditional::Then))),
+		b"e" => Ok((input, Item::Conditional(Conditional::Else))),
+		b";" => Ok((input, Item::Conditional(Conditional::End))),
 
-named!(print<Item>,
-	do_parse!(
-		opt!(tag!(":")) >>
+		_ => Err(nom::Err::Error(make_error(input, ErrorKind::Switch))),
+	}
+}
 
-		flags:     take_while!(is_flag) >>
-		width:     opt!(take_while!(is_digit)) >>
-		precision: opt!(do_parse!(
-			tag!(".") >>
-			amount: take_while!(is_digit) >>
+fn print(input: &[u8]) -> IResult<&[u8], Item> {
+	let (input, _) = opt(tag(":"))(input)?;
 
-			(amount))) >>
+	let (input, flags) = take_while(is_flag)(input)?;
+	let (input, width) = opt(take_while(is_digit))(input)?;
+	let (input, precision) = opt(|input| {
+		let (input, _) = tag(".")(input)?;
+		let (input, amount) = take_while(is_digit)(input)?;
 
-		format: one_of!("doxXsc") >>
+		Ok((input, amount))
+	})(input)?;
 
-		(Item::Print(Print {
+	let (input, format) = one_of("doxXsc")(input)?;
+
+	Ok((
+		input,
+		Item::Print(Print {
 			flags: Flags {
-				width:     number(width.unwrap_or(b"0")) as usize,
+				width: number(width.unwrap_or(b"0")) as usize,
 				precision: number(precision.unwrap_or(b"0")) as usize,
 
 				alternate: flags.contains(&b'#'),
-				left:      flags.contains(&b'-'),
-				sign:      flags.contains(&b'+'),
-				space:     flags.contains(&b' '),
+				left: flags.contains(&b'-'),
+				sign: flags.contains(&b'+'),
+				space: flags.contains(&b' '),
 			},
 
 			format: match format {
@@ -226,9 +257,11 @@ named!(print<Item>,
 				's' => Format::Str,
 				'c' => Format::Chr,
 				'u' => Format::Uni,
-				_   => unreachable!(),
-			}
-		}))));
+				_ => unreachable!(),
+			},
+		}),
+	))
+}
 
 fn is_flag(i: u8) -> bool {
 	i == b' ' || i == b'-' || i == b'+' || i == b'#'

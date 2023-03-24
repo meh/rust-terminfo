@@ -12,46 +12,46 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::env;
-use std::path::{Path, PathBuf};
-use std::fs::{self, File};
-use std::io::Read;
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use fnv::FnvHasher;
 use dirs;
+use fnv::FnvHasher;
+use std::collections::HashMap;
+use std::env;
+use std::fs::{self, File};
+use std::hash::BuildHasherDefault;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use crate::capability::{Capability, Value};
-use crate::names;
 use crate::error::{self, Error};
+use crate::names;
 use crate::parser::compiled;
 
 /// A capability database.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Database {
-	name:        String,
-	aliases:     Vec<String>,
+	name: String,
+	aliases: Vec<String>,
 	description: String,
-	inner:       HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
+	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
 }
 
 /// Builder for a new `Database`.
 #[derive(Default, Debug)]
 pub struct Builder {
-	name:        Option<String>,
-	aliases:     Vec<String>,
+	name: Option<String>,
+	aliases: Vec<String>,
 	description: Option<String>,
-	inner:       HashMap<String, Value, BuildHasherDefault<FnvHasher>>
+	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
 }
 
 impl Builder {
 	/// Build the database.
 	pub fn build(self) -> Result<Database, ()> {
 		Ok(Database {
-			name:        self.name.ok_or(())?,
-			aliases:     self.aliases,
+			name: self.name.ok_or(())?,
+			aliases: self.aliases,
 			description: self.description.ok_or(())?,
-			inner:       self.inner,
+			inner: self.inner,
 		})
 	}
 
@@ -63,8 +63,9 @@ impl Builder {
 
 	/// Set the terminal aliases.
 	pub fn aliases<T, I>(&mut self, iter: I) -> &mut Self
-		where T: Into<String>,
-		      I: IntoIterator<Item = T>,
+	where
+		T: Into<String>,
+		I: IntoIterator<Item = T>,
 	{
 		self.aliases = iter.into_iter().map(|a| a.into()).collect();
 		self
@@ -140,15 +141,14 @@ impl Database {
 	pub fn from_env() -> error::Result<Self> {
 		if let Ok(name) = env::var("TERM") {
 			Self::from_name(name)
-		}
-		else {
+		} else {
 			Err(Error::NotFound)
 		}
 	}
 
 	/// Load a database for the given name.
 	pub fn from_name<N: AsRef<str>>(name: N) -> error::Result<Self> {
-		let name  = name.as_ref();
+		let name = name.as_ref();
 		let first = name.chars().next().ok_or(Error::NotFound)?;
 
 		// See https://manpages.debian.org/buster/ncurses-bin/terminfo.5.en.html#Fetching_Compiled_Descriptions
@@ -226,8 +226,7 @@ impl Database {
 	pub fn from_buffer<T: AsRef<[u8]>>(buffer: T) -> error::Result<Self> {
 		if let Ok((_, database)) = compiled::parse(buffer.as_ref()) {
 			Ok(database.into())
-		}
-		else {
+		} else {
 			Err(Error::Parse)
 		}
 	}

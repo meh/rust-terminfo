@@ -16,10 +16,9 @@
 #[doc = include_str!("../README.md")]
 extern {}
 
-#[macro_use]
+extern crate fnv;
 extern crate nom;
 extern crate phf;
-extern crate fnv;
 
 mod error;
 pub use crate::error::{Error, Result};

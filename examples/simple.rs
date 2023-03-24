@@ -1,22 +1,20 @@
 extern crate terminfo;
 
 use std::io;
-use terminfo::{Database, capability as cap};
+use terminfo::{capability as cap, Database};
 
 fn main() {
-  let info = Database::from_env().unwrap();
+	let info = Database::from_env().unwrap();
 
-  if let Some(cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
-    println!("The terminal supports {} colors.", n);
-  }
-  else {
-    println!("The terminal does not support colors, what year is this?");
-  }
+	if let Some(cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
+		println!("The terminal supports {} colors.", n);
+	} else {
+		println!("The terminal does not support colors, what year is this?");
+	}
 
-  if let Some(flash) = info.get::<cap::FlashScreen>() {
+	if let Some(flash) = info.get::<cap::FlashScreen>() {
 		flash.expand().to(io::stdout()).unwrap();
-  }
-	else {
+	} else {
 		println!("FLASH GORDON!");
 	}
 

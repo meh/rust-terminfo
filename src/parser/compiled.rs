@@ -12,79 +12,82 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::str;
+use nom::branch::alt;
+use nom::bytes::streaming::{tag, take, take_until};
+use nom::combinator::{complete, cond, map, map_opt, map_parser, opt};
+use nom::multi::count;
 use nom::number::streaming::{le_i16, le_i32};
+use nom::IResult;
+use std::str;
 
-use crate::names;
 use crate::capability::Value;
+use crate::names;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Database<'a> {
-	names:    &'a [u8],
+	names: &'a [u8],
 	standard: Standard<'a>,
 	extended: Option<Extended<'a>>,
 }
 
 impl<'a> Into<crate::Database> for Database<'a> {
 	fn into(self) -> crate::Database {
-		let mut names = self.names.split(|&c| c == b'|')
+		let mut names = self
+			.names
+			.split(|&c| c == b'|')
 			.map(|s| unsafe { str::from_utf8_unchecked(s) })
 			.map(|s| s.trim())
 			.collect::<Vec<_>>();
 
 		let mut database = crate::Database::new();
 
-		database
-			.name(names.remove(0))
-			.description(names.pop().unwrap())
-			.aliases(names);
+		database.name(names.remove(0)).description(names.pop().unwrap()).aliases(names);
 
 		for (index, _) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
-				database.raw(name,
-					Value::True);
+				database.raw(name, Value::True);
 			}
 		}
 
 		for (index, &value) in self.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
 			if let Some(&name) = names::NUMBER.get(&(index as u16)) {
-				database.raw(name,
-					Value::Number(value));
+				database.raw(name, Value::Number(value));
 			}
 		}
 
 		for (index, &offset) in self.standard.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
 			if let Some(&name) = names::STRING.get(&(index as u16)) {
-				let string = &self.standard.table[offset as usize ..];
-				let edge   = string.iter().position(|&c| c == 0).unwrap();
+				let string = &self.standard.table[offset as usize..];
+				let edge = string.iter().position(|&c| c == 0).unwrap();
 
-				database.raw(name,
-					Value::String(Vec::from(&string[.. edge])));
+				database.raw(name, Value::String(Vec::from(&string[..edge])));
 			}
 		}
 
 		if let Some(extended) = self.extended {
-			let names = extended.table.split(|&c| c == 0)
+			let names = extended
+				.table
+				.split(|&c| c == 0)
 				.skip(extended.strings.iter().cloned().filter(|&n| n >= 0).count())
 				.map(|s| unsafe { str::from_utf8_unchecked(s) })
 				.collect::<Vec<_>>();
 
-			for (index, _) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value)  {
-				database.raw(names[index],
-					Value::True);
+			for (index, _) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value) {
+				database.raw(names[index], Value::True);
 			}
 
 			for (index, &value) in extended.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-				database.raw(names[extended.booleans.len() + index],
-					Value::Number(value));
+				database.raw(names[extended.booleans.len() + index], Value::Number(value));
 			}
 
 			for (index, &offset) in extended.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-				let string = &extended.table[offset as usize ..];
-				let edge   = string.iter().position(|&c| c == 0).unwrap();
+				let string = &extended.table[offset as usize..];
+				let edge = string.iter().position(|&c| c == 0).unwrap();
 
-				database.raw(names[extended.booleans.len() + extended.numbers.len() + index],
-					Value::String(Vec::from(&string[.. edge])));
+				database.raw(
+					names[extended.booleans.len() + extended.numbers.len() + index],
+					Value::String(Vec::from(&string[..edge])),
+				);
 			}
 		}
 
@@ -95,18 +98,18 @@ impl<'a> Into<crate::Database> for Database<'a> {
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Standard<'a> {
 	booleans: Vec<bool>,
-	numbers:  Vec<i32>,
-	strings:  Vec<i32>,
-	table:    &'a [u8],
+	numbers: Vec<i32>,
+	strings: Vec<i32>,
+	table: &'a [u8],
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Extended<'a> {
 	booleans: Vec<bool>,
-	numbers:  Vec<i32>,
-	strings:  Vec<i32>,
-	names:    Vec<i32>,
-	table:    &'a [u8],
+	numbers: Vec<i32>,
+	strings: Vec<i32>,
+	names: Vec<i32>,
+	table: &'a [u8],
 }
 
 fn bit_size(magic: &[u8]) -> usize {
@@ -114,140 +117,117 @@ fn bit_size(magic: &[u8]) -> usize {
 		0x01 => 16,
 		0x02 => 32,
 
-		_ =>
-			unreachable!("unknown magic number")
+		_ => unreachable!("unknown magic number"),
 	}
 }
 
-macro_rules! cond_reduce(
-	($i:expr, $cond:expr, $submac:ident!( $($args:tt)* )) => (
-		{
-			use nom::lib::std::result::Result::*;
-			use nom::{Err,error::ErrorKind,IResult};
-			let default_err = Err(Err::convert(Err::Error(error_position!($i, ErrorKind::MapRes))));
+pub fn parse(input: &[u8]) -> IResult<&[u8], Database> {
+	let (input, magic) = alt((tag([0x1A, 0x01]), tag([0x1E, 0x02])))(input)?;
 
-			if $cond {
-				let sub_res = $submac!($i, $($args)*);
-				fn unify_types<I,O,E>(_: &IResult<I,O,E>, _: &IResult<I,O,E>) {}
-				unify_types(&sub_res, &default_err);
+	let (input, name_size) = size(input)?;
+	let (input, bool_count) = size(input)?;
+	let (input, num_count) = size(input)?;
+	let (input, string_count) = size(input)?;
+	let (input, table_size) = size(input)?;
 
-				match sub_res {
-					Ok((i,o)) => Ok((i, o)),
-					Err(e)    => Err(e),
-				}
-			} else {
-				default_err
-			}
-		}
-	);
-	($i:expr, $cond:expr, $f:expr) => (
-		cond_reduce!($i, $cond, call!($f));
-	);
-);
+	let (input, names) = map_parser(take(name_size), take_until("\x00"))(input)?;
 
-named!(pub parse<Database>,
-	do_parse!(
-		magic: alt!(tag!([0x1A, 0x01]) | tag!([0x1E, 0x02])) >>
+	let (input, booleans) = count(boolean, bool_count)(input)?;
 
-		name_size:    size >>
-		bool_count:   size >>
-		num_count:    size >>
-		string_count: size >>
-		table_size:   size >>
+	let (input, _) = cond((name_size + bool_count) % 2 != 0, take(1_usize))(input)?;
 
-		names: flat_map!(take!(name_size),
-			take_until!("\x00")) >>
+	let (input, numbers) = count(|input| capability(input, bit_size(magic)), num_count)(input)?;
 
-		booleans: count!(boolean,
-			bool_count) >>
+	let (input, strings) = count(|input| capability(input, 16), string_count)(input)?;
 
-		cond!((name_size + bool_count) % 2 != 0,
-			take!(1)) >>
+	let (input, table) = take(table_size)(input)?;
 
-		numbers: count!(call!(capability, bit_size(magic)),
-			num_count) >>
+	let (input, extended) = opt(complete(|input| {
+		let (input, _) = cond(table_size % 2 != 0, take(1_usize))(input)?;
 
-		strings: count!(call!(capability, 16),
-			string_count) >>
+		let (input, ext_bool_count) = size(input)?;
+		let (input, ext_num_count) = size(input)?;
+		let (input, ext_string_count) = size(input)?;
+		let (input, _ext_offset_count) = size(input)?;
+		let (input, ext_table_size) = size(input)?;
 
-		table: take!(table_size) >>
+		let (input, booleans) = count(boolean, ext_bool_count)(input)?;
 
-		extended: opt!(complete!(do_parse!(
-			cond!(table_size % 2 != 0,
-				take!(1)) >>
+		let (input, _) = cond(ext_bool_count % 2 != 0, take(1_usize))(input)?;
 
-			ext_bool_count:    size >>
-			ext_num_count:     size >>
-			ext_string_count:  size >>
-			_ext_offset_count: size >>
-			ext_table_size:    size >>
+		let (input, numbers) =
+			count(|input| capability(input, bit_size(magic)), ext_num_count)(input)?;
 
-			booleans: count!(boolean,
-				ext_bool_count) >>
+		let (input, strings) = count(|input| capability(input, 16), ext_string_count)(input)?;
 
-			cond!(ext_bool_count % 2 != 0,
-				take!(1)) >>
+		let (input, names) = count(
+			|input| capability(input, 16),
+			ext_bool_count + ext_num_count + ext_string_count,
+		)(input)?;
 
-			numbers: count!(call!(capability, bit_size(magic)),
-				ext_num_count) >>
+		let (input, table) = take(ext_table_size)(input)?;
 
-			strings: count!(call!(capability, 16),
-				ext_string_count) >>
-
-			names: count!(call!(capability, 16),
-				ext_bool_count + ext_num_count + ext_string_count) >>
-
-			table: take!(ext_table_size) >>
-
-			(Extended {
+		Ok((
+			input,
+			Extended {
 				booleans: booleans,
-				numbers:  numbers,
-				strings:  strings,
-				names:    names,
-				table:    table,
-			})))) >>
+				numbers: numbers,
+				strings: strings,
+				names: names,
+				table: table,
+			},
+		))
+	}))(input)?;
 
-		(Database {
+	Ok((
+		input,
+		Database {
 			names: names,
 
 			standard: Standard {
 				booleans: booleans,
-				numbers:  numbers,
-				strings:  strings,
-				table:    table,
+				numbers: numbers,
+				strings: strings,
+				table: table,
 			},
 
 			extended: extended,
-		})));
+		},
+	))
+}
 
-named!(boolean<bool>,
-	alt!(tag!([0]) => { |_| false } |
-	     tag!([1]) => { |_| true }));
+fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
+	alt((map(tag([0]), |_| false), map(tag([1]), |_| true)))(input)
+}
 
-named!(size<usize>,
-	map_opt!(le_i16, |n| match n {
-		-1          => Some(0),
+fn size(input: &[u8]) -> IResult<&[u8], usize> {
+	map_opt(le_i16, |n| match n {
+		-1 => Some(0),
 		n if n >= 0 => Some(n as usize),
-		_           => None }));
+		_ => None,
+	})(input)
+}
 
-named_args!(capability(bits: usize)<i32>,
-	alt!(
-		cond_reduce!(bits == 16,
-			map_opt!(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })) |
-
-		cond_reduce!(bits == 32,
-			map_opt!(le_i32, |n| if n >= -2 { Some(n) } else { None }))));
+fn capability(input: &[u8], bits: usize) -> IResult<&[u8], i32> {
+	alt((
+		map_opt(
+			cond(bits == 16, map_opt(le_i16, |n| if n >= -2 { Some(n as i32) } else { None })),
+			|o| o,
+		),
+		map_opt(cond(bits == 32, map_opt(le_i32, |n| if n >= -2 { Some(n) } else { None })), |o| o),
+	))(input)
+}
 
 #[cfg(test)]
 mod test {
+	use super::*;
+	use crate::capability as cap;
 	use std::fs::File;
 	use std::io::Read;
 	use std::path::Path;
-	use super::*;
-	use crate::capability as cap;
 
 	fn load<P: AsRef<Path>, F: FnOnce(crate::Database)>(path: P, f: F) {
-		let mut file   = File::open(path).unwrap();
+		let mut file = File::open(path).unwrap();
 		let mut buffer = Vec::new();
 		file.read_to_end(&mut buffer).unwrap();
 
@@ -256,20 +236,19 @@ mod test {
 
 	#[test]
 	fn name() {
-		load("tests/cancer-256color", |db|
-			assert_eq!("cancer-256color", db.name()));
+		load("tests/cancer-256color", |db| assert_eq!("cancer-256color", db.name()));
 	}
 
 	#[test]
 	fn aliases() {
-		load("tests/st-256color", |db|
-			assert_eq!(vec!["stterm-256color"], db.aliases()));
+		load("tests/st-256color", |db| assert_eq!(vec!["stterm-256color"], db.aliases()));
 	}
 
 	#[test]
 	fn description() {
-		load("tests/cancer-256color", |db|
-			assert_eq!("terminal cancer with 256 colors", db.description()));
+		load("tests/cancer-256color", |db| {
+			assert_eq!("terminal cancer with 256 colors", db.description())
+		});
 	}
 
 	#[test]
@@ -292,7 +271,6 @@ mod test {
 
 	#[test]
 	fn bigger_numbers() {
-		load("tests/xterm-256color", |db|
-			assert_eq!("xterm-256color", db.name()));
+		load("tests/xterm-256color", |db| assert_eq!("xterm-256color", db.name()));
 	}
 }
