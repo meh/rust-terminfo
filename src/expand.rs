@@ -20,7 +20,12 @@ use crate::parser::expansion::*;
 
 /// Trait for items that can be expanded.
 pub trait Expand {
-	fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()>;
+	fn expand<W: Write>(
+		&self,
+		output: W,
+		parameters: &[Parameter],
+		context: &mut Context,
+	) -> error::Result<()>;
 }
 
 /// An expansion parameter.
@@ -40,29 +45,29 @@ impl Default for Parameter {
 }
 
 macro_rules! from {
-	(number $ty:ty) => (
+	(number $ty:ty) => {
 		impl From<$ty> for Parameter {
 			fn from(value: $ty) -> Self {
 				Parameter::Number(value as i32)
 			}
 		}
-	);
+	};
 
-	(string ref $ty:ty) => (
+	(string ref $ty:ty) => {
 		impl<'a> From<&'a $ty> for Parameter {
 			fn from(value: &'a $ty) -> Self {
 				Parameter::String(value.into())
 			}
 		}
-	);
+	};
 
-	(string $ty:ty) => (
+	(string $ty:ty) => {
 		impl From<$ty> for Parameter {
 			fn from(value: $ty) -> Self {
 				Parameter::String(value.into())
 			}
 		}
-	);
+	};
 }
 
 from!(number bool);
@@ -84,7 +89,7 @@ from!(string ref [u8]);
 /// same `Database`.
 #[derive(Eq, PartialEq, Default, Debug)]
 pub struct Context {
-	pub fixed:   [Parameter; 26],
+	pub fixed: [Parameter; 26],
 	pub dynamic: [Parameter; 26],
 }
 
@@ -170,30 +175,34 @@ macro_rules! expand {
 }
 
 impl Expand for [u8] {
-	fn expand<W: Write>(&self, output: W, parameters: &[Parameter], context: &mut Context) -> error::Result<()> {
-		let mut output                 = BufWriter::new(output);
-		let mut input                  = self;
+	fn expand<W: Write>(
+		&self,
+		output: W,
+		parameters: &[Parameter],
+		context: &mut Context,
+	) -> error::Result<()> {
+		let mut output = BufWriter::new(output);
+		let mut input = self;
 		let mut params: [Parameter; 9] = Default::default();
-		let mut stack                  = Vec::new();
-		let mut conditional            = false;
-		let mut incremented            = false;
+		let mut stack = Vec::new();
+		let mut conditional = false;
+		let mut incremented = false;
 
 		for (dest, source) in params.iter_mut().zip(parameters.iter()) {
 			*dest = source.clone();
 		}
 
 		macro_rules! next {
-			() => (
+			() => {
 				match parse(input) {
 					Ok((rest, item)) => {
 						input = rest;
 						item
 					}
 
-					Err(_) =>
-						return Err(error::Expand::Invalid.into())
+					Err(_) => return Err(error::Expand::Invalid.into()),
 				}
-			);
+			};
 		}
 
 		'main: while !input.is_empty() {
@@ -206,51 +215,45 @@ impl Expand for [u8] {
 					conditional = false;
 				}
 
-				Item::Conditional(Conditional::Then) if conditional => {
-					match stack.pop() {
-						Some(Parameter::Number(0)) => {
-							let mut level = 0;
+				Item::Conditional(Conditional::Then) if conditional => match stack.pop() {
+					Some(Parameter::Number(0)) => {
+						let mut level = 0;
 
-							while !input.is_empty() {
-								match next!() {
-									Item::Conditional(Conditional::End) |
-									Item::Conditional(Conditional::Else) if level == 0 =>
-										continue 'main,
-
-									Item::Conditional(Conditional::If) =>
-										level += 1,
-
-									Item::Conditional(Conditional::End) =>
-										level -= 1,
-
-									_ => (),
+						while !input.is_empty() {
+							match next!() {
+								Item::Conditional(Conditional::End)
+								| Item::Conditional(Conditional::Else)
+									if level == 0 =>
+								{
+									continue 'main
 								}
-							}
 
-							return Err(error::Expand::Invalid.into());
+								Item::Conditional(Conditional::If) => level += 1,
+
+								Item::Conditional(Conditional::End) => level -= 1,
+
+								_ => (),
+							}
 						}
 
-						Some(_) =>
-							(),
-
-						None =>
-							return Err(error::Expand::StackUnderflow.into()),
+						return Err(error::Expand::Invalid.into());
 					}
-				}
+
+					Some(_) => (),
+
+					None => return Err(error::Expand::StackUnderflow.into()),
+				},
 
 				Item::Conditional(Conditional::Else) if conditional => {
 					let mut level = 0;
 
 					while !input.is_empty() {
 						match next!() {
-							Item::Conditional(Conditional::End) if level == 0 =>
-								continue 'main,
+							Item::Conditional(Conditional::End) if level == 0 => continue 'main,
 
-							Item::Conditional(Conditional::If) =>
-								level += 1,
+							Item::Conditional(Conditional::If) => level += 1,
 
-							Item::Conditional(Conditional::End) =>
-								level -= 1,
+							Item::Conditional(Conditional::End) => level -= 1,
 
 							_ => (),
 						}
@@ -259,11 +262,9 @@ impl Expand for [u8] {
 					return Err(error::Expand::Invalid.into());
 				}
 
-				Item::Conditional(..) =>
-					return Err(error::Expand::Invalid.into()),
+				Item::Conditional(..) => return Err(error::Expand::Invalid.into()),
 
-				Item::String(value) =>
-					output.write_all(value)?,
+				Item::String(value) => output.write_all(value)?,
 
 				Item::Constant(Constant::Character(ch)) => {
 					stack.push(Parameter::Number(ch as i32));
@@ -273,21 +274,19 @@ impl Expand for [u8] {
 					stack.push(Parameter::Number(value));
 				}
 
-				Item::Variable(Variable::Length) => {
-					match stack.pop() {
-						Some(Parameter::String(ref value)) => {
-							stack.push(Parameter::Number(value.len() as i32));
-						}
-
-						Some(_) => {
-							return Err(error::Expand::TypeMismatch.into());
-						}
-
-						None => {
-							return Err(error::Expand::StackUnderflow.into());
-						}
+				Item::Variable(Variable::Length) => match stack.pop() {
+					Some(Parameter::String(ref value)) => {
+						stack.push(Parameter::Number(value.len() as i32));
 					}
-				}
+
+					Some(_) => {
+						return Err(error::Expand::TypeMismatch.into());
+					}
+
+					None => {
+						return Err(error::Expand::StackUnderflow.into());
+					}
+				},
 
 				Item::Variable(Variable::Push(index)) => {
 					stack.push(params[index as usize].clone());
@@ -297,12 +296,10 @@ impl Expand for [u8] {
 					if let Some(value) = stack.pop() {
 						if dynamic {
 							context.dynamic[index as usize] = value.clone();
-						}
-						else {
+						} else {
 							context.fixed[index as usize] = value.clone();
 						}
-					}
-					else {
+					} else {
 						return Err(error::Expand::StackUnderflow.into());
 					}
 				}
@@ -310,8 +307,7 @@ impl Expand for [u8] {
 				Item::Variable(Variable::Get(dynamic, index)) => {
 					if dynamic {
 						stack.push(context.dynamic[index as usize].clone());
-					}
-					else {
+					} else {
 						stack.push(context.fixed[index as usize].clone());
 					}
 				}
@@ -319,76 +315,78 @@ impl Expand for [u8] {
 				Item::Operation(Operation::Increment) if !incremented => {
 					incremented = true;
 
-					if let (&Parameter::Number(x), &Parameter::Number(y)) = (&params[0], &params[1]) {
+					if let (&Parameter::Number(x), &Parameter::Number(y)) = (&params[0], &params[1])
+					{
 						params[0] = Parameter::Number(x + 1);
 						params[1] = Parameter::Number(y + 1);
-					}
-					else {
+					} else {
 						return Err(error::Expand::TypeMismatch.into());
 					}
 				}
 
 				Item::Operation(Operation::Increment) => (),
 
-				Item::Operation(Operation::Binary(operation)) => {
-					match (stack.pop(), stack.pop()) {
-						(Some(Parameter::Number(y)), Some(Parameter::Number(x))) =>
-							stack.push(Parameter::Number(match operation {
-								Binary::Add       => x + y,
-								Binary::Subtract  => x - y,
-								Binary::Multiply  => x * y,
-								Binary::Divide    => if y != 0 { x / y } else { 0 },
-								Binary::Remainder => if y != 0 { x % y } else { 0 },
+				Item::Operation(Operation::Binary(operation)) => match (stack.pop(), stack.pop()) {
+					(Some(Parameter::Number(y)), Some(Parameter::Number(x))) => {
+						stack.push(Parameter::Number(match operation {
+							Binary::Add => x + y,
+							Binary::Subtract => x - y,
+							Binary::Multiply => x * y,
+							Binary::Divide => {
+								if y != 0 {
+									x / y
+								} else {
+									0
+								}
+							}
+							Binary::Remainder => {
+								if y != 0 {
+									x % y
+								} else {
+									0
+								}
+							}
 
-								Binary::AND => x & y,
-								Binary::OR  => x | y,
-								Binary::XOR => x ^ y,
+							Binary::AND => x & y,
+							Binary::OR => x | y,
+							Binary::XOR => x ^ y,
 
-								Binary::And => (x != 0 && y != 0) as i32,
-								Binary::Or  => (x != 0 || y != 0) as i32,
+							Binary::And => (x != 0 && y != 0) as i32,
+							Binary::Or => (x != 0 || y != 0) as i32,
 
-								Binary::Equal   => (x == y) as i32,
-								Binary::Greater => (x > y) as i32,
-								Binary::Lesser  => (x < y) as i32,
-							})),
-
-						(Some(_), Some(_)) =>
-							return Err(error::Expand::TypeMismatch.into()),
-
-						_ =>
-							return Err(error::Expand::StackUnderflow.into()),
+							Binary::Equal => (x == y) as i32,
+							Binary::Greater => (x > y) as i32,
+							Binary::Lesser => (x < y) as i32,
+						}))
 					}
-				}
 
-				Item::Operation(Operation::Unary(operation)) => {
-					match stack.pop() {
-						Some(Parameter::Number(x)) =>
-							stack.push(Parameter::Number(match operation {
-								Unary::Not => (x != 0) as i32,
-								Unary::NOT => !x,
-							})),
+					(Some(_), Some(_)) => return Err(error::Expand::TypeMismatch.into()),
 
-						Some(_) =>
-							return Err(error::Expand::TypeMismatch.into()),
+					_ => return Err(error::Expand::StackUnderflow.into()),
+				},
 
-						_ =>
-							return Err(error::Expand::StackUnderflow.into()),
-					}
-				}
+				Item::Operation(Operation::Unary(operation)) => match stack.pop() {
+					Some(Parameter::Number(x)) => stack.push(Parameter::Number(match operation {
+						Unary::Not => (x != 0) as i32,
+						Unary::NOT => !x,
+					})),
+
+					Some(_) => return Err(error::Expand::TypeMismatch.into()),
+
+					_ => return Err(error::Expand::StackUnderflow.into()),
+				},
 
 				Item::Print(p) => {
 					/// Calculate the length of a formatted number.
 					fn length(value: i32, p: &Print) -> usize {
 						let digits = match p.format {
-							Format::Dec =>
-								(value as f32).abs().log(10.0).floor() as usize + 1,
+							Format::Dec => (value as f32).abs().log(10.0).floor() as usize + 1,
 
-							Format::Oct =>
-								(value as f32).abs().log(8.0).floor() as usize + 1,
+							Format::Oct => (value as f32).abs().log(8.0).floor() as usize + 1,
 
-							Format::Hex |
-							Format::HEX =>
-								(value as f32).abs().log(16.0).floor() as usize + 1,
+							Format::Hex | Format::HEX => {
+								(value as f32).abs().log(16.0).floor() as usize + 1
+							}
 
 							_ => unreachable!(),
 						};
@@ -408,13 +406,11 @@ impl Expand for [u8] {
 						// Add the alternate representation.
 						if p.flags.alternate {
 							match p.format {
-								Format::Hex | Format::HEX =>
-									length += 2,
+								Format::Hex | Format::HEX => length += 2,
 
-								Format::Oct =>
-									length += 1,
+								Format::Oct => length += 1,
 
-								_ => ()
+								_ => (),
 							}
 						}
 
@@ -464,7 +460,7 @@ impl Expand for [u8] {
 							let mut value = &value[..];
 
 							if p.flags.precision > 0 && p.flags.precision < value.len() {
-								value = &value[.. p.flags.precision];
+								value = &value[..p.flags.precision];
 							}
 
 							f!(before by value.len());
@@ -472,11 +468,14 @@ impl Expand for [u8] {
 							f!(after by value.len());
 						}
 
-						(Format::Chr, Some(Parameter::Number(value))) =>
-							w!("{}", value as u8 as char),
+						(Format::Chr, Some(Parameter::Number(value))) => {
+							w!("{}", value as u8 as char)
+						}
 
-						(Format::Uni, Some(Parameter::Number(value))) =>
-							w!("{}", char::from_u32(value as u32).ok_or(error::Expand::TypeMismatch)?),
+						(Format::Uni, Some(Parameter::Number(value))) => w!(
+							"{}",
+							char::from_u32(value as u32).ok_or(error::Expand::TypeMismatch)?
+						),
 
 						(Format::Dec, Some(Parameter::Number(value))) => {
 							f!(before value);
@@ -526,11 +525,9 @@ impl Expand for [u8] {
 							f!(after value);
 						}
 
-						(_, Some(_)) =>
-							return Err(error::Expand::TypeMismatch.into()),
+						(_, Some(_)) => return Err(error::Expand::TypeMismatch.into()),
 
-						(_, None) =>
-							return Err(error::Expand::StackUnderflow.into()),
+						(_, None) => return Err(error::Expand::StackUnderflow.into()),
 					}
 				}
 			}
@@ -544,28 +541,22 @@ impl Expand for [u8] {
 mod test {
 	#[test]
 	fn test_basic_setabf() {
-		assert_eq!(b"\\E[48;5;1m".to_vec(),
-			expand!(b"\\E[48;5;%p1%dm"; 1).unwrap());
+		assert_eq!(b"\\E[48;5;1m".to_vec(), expand!(b"\\E[48;5;%p1%dm"; 1).unwrap());
 	}
 
 	#[test]
 	fn print() {
-		assert_eq!(b"0001".to_vec(),
-			expand!(b"%p1%4d"; 1).unwrap());
+		assert_eq!(b"0001".to_vec(), expand!(b"%p1%4d"; 1).unwrap());
 
-		assert_eq!(b"10".to_vec(),
-			expand!(b"%p1%o"; 8).unwrap());
+		assert_eq!(b"10".to_vec(), expand!(b"%p1%o"; 8).unwrap());
 	}
 
 	#[test]
 	fn conditional() {
-		assert_eq!(b"1".to_vec(),
-			expand!(b"%?%p1%t1%e2%;"; 1).unwrap());
+		assert_eq!(b"1".to_vec(), expand!(b"%?%p1%t1%e2%;"; 1).unwrap());
 
-		assert_eq!(b"2".to_vec(),
-			expand!(b"%?%p1%t1%e2%;"; 0).unwrap());
+		assert_eq!(b"2".to_vec(), expand!(b"%?%p1%t1%e2%;"; 0).unwrap());
 
-		assert_eq!(b"3".to_vec(),
-			expand!(b"%?%p1%t%e%p2%t2%e%p3%t3%;"; 0, 0, 1).unwrap());
+		assert_eq!(b"3".to_vec(), expand!(b"%?%p1%t%e%p2%t2%e%p3%t3%;"; 0, 0, 1).unwrap());
 	}
 }

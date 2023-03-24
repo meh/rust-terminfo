@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+#[rustfmt::skip]
 const BOOLEAN: &'static [&'static str] = &[
 	"auto_left_margin", "auto_right_margin", "no_esc_ctlc", "ceol_standout_glitch",
 	"eat_newline_glitch", "erase_overstrike", "generic_type", "hard_copy", "has_meta_key",
@@ -18,6 +19,7 @@ const BOOLEAN: &'static [&'static str] = &[
 	"gnu_has_meta_key", "linefeed_is_newline", "has_hardware_tabs", "return_does_clr_eol"
 ];
 
+#[rustfmt::skip]
 const NUMBER: &'static [&'static str] = &[
 	"columns", "init_tabs", "lines", "lines_of_memory", "magic_cookie_glitch", "padding_baud_rate",
 	"virtual_terminal", "width_status_line", "num_labels", "label_height", "label_width",
@@ -30,6 +32,7 @@ const NUMBER: &'static [&'static str] = &[
 	"number_of_function_keys"
 ];
 
+#[rustfmt::skip]
 const STRING: &'static [&'static str] = &[
 	"back_tab", "bell", "carriage_return", "change_scroll_region", "clear_all_tabs",
 	"clear_screen", "clr_eol", "clr_eos", "column_address", "command_character", "cursor_address",
@@ -144,7 +147,6 @@ const TERMINFO: &'static [(&'static str, &'static str)] = &[
 	("tilde_glitch", "hz"),
 	("transparent_underline", "ul"),
 	("xon_xoff", "xon"),
-
 	// Number names.
 	("bit_image_entwining", "bitwin"),
 	("bit_image_type", "bitype"),
@@ -179,7 +181,6 @@ const TERMINFO: &'static [(&'static str, &'static str)] = &[
 	("virtual_terminal", "vt"),
 	("wide_char_size", "widcs"),
 	("width_status_line", "wsl"),
-
 	// String names.
 	("acs_chars", "acsc"),
 	("alt_scancode_esc", "scesa"),
@@ -301,7 +302,6 @@ const TERMINFO: &'static [(&'static str, &'static str)] = &[
 	("insert_character", "ich1"),
 	("insert_line", "il1"),
 	("insert_padding", "ip"),
-
 	("key_a1", "ka1"),
 	("key_a3", "ka3"),
 	("key_b2", "kb2"),
@@ -557,7 +557,6 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 	("tilde_glitch", "hz"),
 	("transparent_underline", "ul"),
 	("xon_xoff", "xo"),
-
 	// Number names.
 	("bit_image_entwining", "Yo"),
 	("bit_image_type", "Yp"),
@@ -592,7 +591,6 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 	("virtual_terminal", "vt"),
 	("wide_char_size", "Yn"),
 	("width_status_line", "ws"),
-
 	// String names.
 	("acs_chars", "ac"),
 	("alt_scancode_esc", "S8"),
@@ -707,7 +705,6 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 	("insert_character", "ic"),
 	("insert_line", "al"),
 	("insert_padding", "ip"),
-
 	("key_a1", "K1"),
 	("key_a3", "K3"),
 	("key_b2", "K2"),
@@ -913,7 +910,7 @@ const TERMCAP: &'static [(&'static str, &'static str)] = &[
 ];
 
 fn main() {
-	let     path = Path::new(&env::var("OUT_DIR").unwrap()).join("names.rs");
+	let path = Path::new(&env::var("OUT_DIR").unwrap()).join("names.rs");
 	let mut file = BufWriter::new(File::create(&path).unwrap());
 
 	write!(&mut file, "pub static BOOLEAN: ::phf::Map<u16, &'static str> = ").unwrap();
