@@ -14,7 +14,7 @@
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
-extern {}
+extern "C" {}
 
 extern crate fnv;
 extern crate nom;
