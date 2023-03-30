@@ -189,21 +189,8 @@ impl Expand for [u8] {
 			*dest = source.clone();
 		}
 
-		macro_rules! next {
-			() => {
-				match parse(input) {
-					Ok((rest, item)) => {
-						input = rest;
-						item
-					}
-
-					Err(_) => return Err(error::Expand::Invalid.into()),
-				}
-			};
-		}
-
 		'main: while !input.is_empty() {
-			match next!() {
+			match next_item(&mut input)? {
 				Item::Conditional(Conditional::If) => {
 					conditional = true;
 				}
@@ -217,7 +204,7 @@ impl Expand for [u8] {
 						let mut level = 0;
 
 						while !input.is_empty() {
-							match next!() {
+							match next_item(&mut input)? {
 								Item::Conditional(Conditional::End)
 								| Item::Conditional(Conditional::Else)
 									if level == 0 =>
@@ -245,7 +232,7 @@ impl Expand for [u8] {
 					let mut level = 0;
 
 					while !input.is_empty() {
-						match next!() {
+						match next_item(&mut input)? {
 							Item::Conditional(Conditional::End) if level == 0 => continue 'main,
 
 							Item::Conditional(Conditional::If) => level += 1,
@@ -532,6 +519,17 @@ impl Expand for [u8] {
 
 		Ok(())
 	}
+}
+
+fn next_item<'input>(input: &mut &'input [u8]) -> error::Result<Item<'input>> {
+	Ok(match parse(input) {
+		Ok((rest, item)) => {
+			*input = rest;
+			item
+		}
+
+		Err(_) => return Err(error::Expand::Invalid.into()),
+	})
 }
 
 #[cfg(test)]
