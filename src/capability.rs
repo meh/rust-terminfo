@@ -270,7 +270,7 @@ macro_rules! define {
 		define!(string builder $ident; 0, $($rest)+, );
 	);
 
-	(string parameters $ident:ident; $($name:ident : $ty:ty),+) => (
+	(string parameters $ident:ident; $($name:ident : $ty:ty $(=> $realty:ty)?),+) => (
 		impl<'a> Expansion<'a, $ident<'a>> {
 			/// Pass all expansion parameters at once.
 			#[allow(unused_assignments)]
@@ -279,8 +279,9 @@ macro_rules! define {
 				let mut index = 0;
 
 				$({
-					self.params[index]  = $name.into();
-					index              += 1;
+					$(let $name: $realty = $name.into();)?
+					self.params[index] = $name.into();
+					index += 1;
 				})*;
 
 				self
@@ -289,62 +290,19 @@ macro_rules! define {
 	);
 
 	(string builder $ident:ident; $index:expr, ) => ();
-
-	(string builder $ident:ident; $index:expr, $name:ident : u8, $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : u8);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : i8, $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : i8);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : u16, $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : u16);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : i16 $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : i16);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : u32, $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : u32);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : i32, $($rest:tt)*) => (
-		define!(string builder direct $ident; $index, $name : i32);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder $ident:ident; $index:expr, $name:ident : $ty:ty, $($rest:tt)*) => (
-		define!(string builder into $ident; $index, $name : $ty);
-		define!(string builder $ident; $index + 1, $($rest)*);
-	);
-
-	(string builder direct $ident:ident; $index:expr, $name:ident : $ty:ty) => (
+	(string builder $ident:ident; $index:expr,
+		$name:ident : $ty:ty $(=> $realty:ty)? $(, $($rest:tt)*)?
+	) => (
 		impl<'a> Expansion<'a, $ident<'a>> {
 			/// Set the given parameter.
 			#[inline]
 			pub fn $name(mut self, value: $ty) -> Self {
+				$(let value: $realty = value.into();)?
 				self.params[$index] = value.into();
 				self
 			}
 		}
-	);
-
-	(string builder into $ident:ident; $index:expr, $name:ident : $ty:ty) => (
-		impl<'a> Expansion<'a, $ident<'a>> {
-			/// Set the given parameter.
-			#[inline]
-			pub fn $name<T: Into<$ty>>(mut self, value: T) -> Self {
-				self.params[$index] = value.into().into();
-				self
-			}
-		}
+		$(define!(string builder $ident; $index + 1, $($rest)*);)?
 	);
 }
 
@@ -884,15 +842,15 @@ define!(string RowAddress => "row_address";
 	y: u32);
 
 define!(string SetAttributes => "set_attributes";
-    standout:    bool,
-    underline:   bool,
-    reverse:     bool,
-    blink:       bool,
-    dim:         bool,
-    bold:        bool,
-    invisible:   bool,
-    protected:   bool,
-    alt_charset: bool);
+    standout:    impl Into<bool> => bool,
+    underline:   impl Into<bool> => bool,
+    reverse:     impl Into<bool> => bool,
+    blink:       impl Into<bool> => bool,
+    dim:         impl Into<bool> => bool,
+    bold:        impl Into<bool> => bool,
+    invisible:   impl Into<bool> => bool,
+    protected:   impl Into<bool> => bool,
+    alt_charset: impl Into<bool> => bool);
 
 define!(string SetAForeground => "set_a_foreground";
 	color: u8);
@@ -915,8 +873,8 @@ define!(boolean XTermMouse => "XM");
 define!(boolean TrueColor => "Tc");
 
 define!(string SetClipboard => "Ms";
-	selection: String,
-	content:   Vec<u8>);
+	selection: impl Into<String> => String,
+	content:   impl Into<Vec<u8>> => Vec<u8>);
 
 define!(string SetCursorStyle => "Ss";
 	kind: u8);
@@ -937,7 +895,7 @@ define!(string SetTrueColorBackground => "8b";
 define!(string ResetCursorColor => "Cr");
 
 define!(string SetCursorColor => "Cs";
-	color: String);
+	color: impl Into<String> => String);
 
 #[cfg(test)]
 mod test {
