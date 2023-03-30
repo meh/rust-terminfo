@@ -254,14 +254,6 @@ macro_rules! define {
 
 	(string $ident:ident => $capability:expr) => (
 		define!(string define $ident => $capability);
-
-		impl<'a> Expansion<'a, $ident<'a>> {
-			/// Pass all expansion parameters at once.
-			#[inline]
-			pub fn parameters(self) -> Self {
-				self
-			}
-		}
 	);
 
 	(string $ident:ident => $capability:expr; $($rest:tt)+) => (
