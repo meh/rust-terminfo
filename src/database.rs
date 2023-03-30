@@ -12,7 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use dirs;
 use fnv::FnvHasher;
 use std::collections::HashMap;
 use std::env;
@@ -121,7 +120,7 @@ impl Builder {
 	/// ```
 	pub fn raw<S: AsRef<str>, V: Into<Value>>(&mut self, name: S, value: V) -> &mut Self {
 		let name = name.as_ref();
-		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
+		let name = names::ALIASES.get(name).copied().unwrap_or(name);
 
 		if !self.inner.contains_key(name) {
 			self.inner.insert(name.into(), value.into());
@@ -132,7 +131,9 @@ impl Builder {
 }
 
 impl Database {
-	/// Create a new empty database.
+	/// Create a database builder for constucting a database.
+	// Clippy is right, the naming is is unconventional, but it’s probably not worth changing
+	#[allow(clippy::new_ret_no_self)]
 	pub fn new() -> Builder {
 		Builder::default()
 	}
@@ -156,11 +157,9 @@ impl Database {
 
 		if let Some(dir) = env::var_os("TERMINFO") {
 			search.push(dir.into());
-		} else {
-			if let Some(mut home) = dirs::home_dir() {
-				home.push(".terminfo");
-				search.push(home.into());
-			}
+		} else if let Some(mut home) = dirs::home_dir() {
+			home.push(".terminfo");
+			search.push(home);
 		}
 
 		if let Ok(dirs) = env::var("TERMINFO_DIRS") {
@@ -277,7 +276,7 @@ impl Database {
 	/// ```
 	pub fn raw<S: AsRef<str>>(&self, name: S) -> Option<&Value> {
 		let name = name.as_ref();
-		let name = names::ALIASES.get(name).map(|s| *s).unwrap_or(name);
+		let name = names::ALIASES.get(name).copied().unwrap_or(name);
 
 		self.inner.get(name)
 	}

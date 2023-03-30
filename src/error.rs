@@ -62,7 +62,7 @@ impl fmt::Display for Error {
 		match *self {
 			Error::Io(ref err) => err.fmt(f),
 
-			Error::NotFound => f.write_str(&"Capability database not found."),
+			Error::NotFound => f.write_str("Capability database not found."),
 
 			Error::Parse => f.write_str("Failed to parse capability database."),
 

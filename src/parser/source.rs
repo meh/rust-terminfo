@@ -68,7 +68,7 @@ fn definition(input: &[u8]) -> IResult<&[u8], Item> {
 	Ok((input, {
 		let mut aliases = content.split(|c| c == '|').map(|n| n.trim()).collect::<Vec<_>>();
 
-		Item::Definition { name: name, description: aliases.pop().unwrap(), aliases: aliases }
+		Item::Definition { name, description: aliases.pop().unwrap(), aliases }
 	}))
 }
 
