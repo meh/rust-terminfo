@@ -189,7 +189,7 @@ impl Expand for [u8] {
 			*dest = source.clone();
 		}
 
-		'main: while !input.is_empty() {
+		while !input.is_empty() {
 			match next_item(&mut input)? {
 				Item::Conditional(Conditional::If) => {
 					conditional = true;
@@ -203,24 +203,21 @@ impl Expand for [u8] {
 					Some(Parameter::Number(0)) => {
 						let mut level = 0;
 
-						while !input.is_empty() {
+						loop {
+							if input.is_empty() {
+								return Err(error::Expand::Invalid.into());
+							}
 							match next_item(&mut input)? {
-								Item::Conditional(Conditional::End)
-								| Item::Conditional(Conditional::Else)
+								Item::Conditional(Conditional::End | Conditional::Else)
 									if level == 0 =>
 								{
-									continue 'main
+									break
 								}
-
 								Item::Conditional(Conditional::If) => level += 1,
-
 								Item::Conditional(Conditional::End) => level -= 1,
-
 								_ => (),
 							}
 						}
-
-						return Err(error::Expand::Invalid.into());
 					}
 
 					Some(_) => (),
@@ -231,19 +228,17 @@ impl Expand for [u8] {
 				Item::Conditional(Conditional::Else) if conditional => {
 					let mut level = 0;
 
-					while !input.is_empty() {
+					loop {
+						if input.is_empty() {
+							return Err(error::Expand::Invalid.into());
+						}
 						match next_item(&mut input)? {
-							Item::Conditional(Conditional::End) if level == 0 => continue 'main,
-
+							Item::Conditional(Conditional::End) if level == 0 => break,
 							Item::Conditional(Conditional::If) => level += 1,
-
 							Item::Conditional(Conditional::End) => level -= 1,
-
 							_ => (),
 						}
 					}
-
-					return Err(error::Expand::Invalid.into());
 				}
 
 				Item::Conditional(..) => return Err(error::Expand::Invalid.into()),
