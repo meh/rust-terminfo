@@ -24,7 +24,7 @@ mod error;
 pub use crate::error::{Error, Result};
 
 /// Parsers for various formats.
-pub mod parser;
+mod parser;
 
 /// String capability expansion.
 #[macro_use]
