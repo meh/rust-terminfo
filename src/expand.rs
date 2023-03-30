@@ -307,36 +307,7 @@ impl Expand for [u8] {
 
 				Item::Operation(Operation::Binary(operation)) => match (stack.pop(), stack.pop()) {
 					(Some(Parameter::Number(y)), Some(Parameter::Number(x))) => {
-						stack.push(Parameter::Number(match operation {
-							Binary::Add => x + y,
-							Binary::Subtract => x - y,
-							Binary::Multiply => x * y,
-							Binary::Divide => {
-								if y != 0 {
-									x / y
-								} else {
-									0
-								}
-							}
-							Binary::Remainder => {
-								if y != 0 {
-									x % y
-								} else {
-									0
-								}
-							}
-
-							Binary::AND => x & y,
-							Binary::OR => x | y,
-							Binary::XOR => x ^ y,
-
-							Binary::And => (x != 0 && y != 0) as i32,
-							Binary::Or => (x != 0 || y != 0) as i32,
-
-							Binary::Equal => (x == y) as i32,
-							Binary::Greater => (x > y) as i32,
-							Binary::Lesser => (x < y) as i32,
-						}))
+						stack.push(Parameter::Number(eval_binary(operation, x, y)))
 					}
 
 					(Some(_), Some(_)) => return Err(error::Expand::TypeMismatch.into()),
@@ -345,10 +316,9 @@ impl Expand for [u8] {
 				},
 
 				Item::Operation(Operation::Unary(operation)) => match stack.pop() {
-					Some(Parameter::Number(x)) => stack.push(Parameter::Number(match operation {
-						Unary::Not => (x != 0) as i32,
-						Unary::NOT => !x,
-					})),
+					Some(Parameter::Number(x)) => {
+						stack.push(Parameter::Number(eval_unary(operation, x)))
+					}
 
 					Some(_) => return Err(error::Expand::TypeMismatch.into()),
 
@@ -525,6 +495,46 @@ fn next_item<'input>(input: &mut &'input [u8]) -> error::Result<Item<'input>> {
 
 		Err(_) => return Err(error::Expand::Invalid.into()),
 	})
+}
+
+fn eval_binary(operation: Binary, x: i32, y: i32) -> i32 {
+	match operation {
+		Binary::Add => x + y,
+		Binary::Subtract => x - y,
+		Binary::Multiply => x * y,
+		Binary::Divide => {
+			if y != 0 {
+				x / y
+			} else {
+				0
+			}
+		}
+		Binary::Remainder => {
+			if y != 0 {
+				x % y
+			} else {
+				0
+			}
+		}
+
+		Binary::AND => x & y,
+		Binary::OR => x | y,
+		Binary::XOR => x ^ y,
+
+		Binary::And => (x != 0 && y != 0) as i32,
+		Binary::Or => (x != 0 || y != 0) as i32,
+
+		Binary::Equal => (x == y) as i32,
+		Binary::Greater => (x > y) as i32,
+		Binary::Lesser => (x < y) as i32,
+	}
+}
+
+fn eval_unary(operation: Unary, x: i32) -> i32 {
+	match operation {
+		Unary::Not => (x != 0) as i32,
+		Unary::NOT => !x,
+	}
 }
 
 #[cfg(test)]
