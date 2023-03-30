@@ -120,7 +120,7 @@ pub fn parse(input: &[u8]) -> IResult<&[u8], Item> {
 }
 
 fn string(input: &[u8]) -> IResult<&[u8], Item> {
-	map(complete::take_till(|b| b == b'%'), |s| Item::String(s))(input)
+	map(complete::take_till(|b| b == b'%'), Item::String)(input)
 }
 
 fn expansion(input: &[u8]) -> IResult<&[u8], Item> {

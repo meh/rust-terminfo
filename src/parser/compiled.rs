@@ -30,9 +30,9 @@ pub struct Database<'a> {
 	extended: Option<Extended<'a>>,
 }
 
-impl<'a> Into<crate::Database> for Database<'a> {
-	fn into(self) -> crate::Database {
-		let mut names = self
+impl<'a> From<Database<'a>> for crate::Database {
+	fn from(source: Database<'a>) -> Self {
+		let mut names = source
 			.names
 			.split(|&c| c == b'|')
 			.map(|s| unsafe { str::from_utf8_unchecked(s) })
@@ -43,28 +43,30 @@ impl<'a> Into<crate::Database> for Database<'a> {
 
 		database.name(names.remove(0)).description(names.pop().unwrap()).aliases(names);
 
-		for (index, _) in self.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
+		for (index, _) in source.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
 				database.raw(name, Value::True);
 			}
 		}
 
-		for (index, &value) in self.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
+		for (index, &value) in source.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0)
+		{
 			if let Some(&name) = names::NUMBER.get(&(index as u16)) {
 				database.raw(name, Value::Number(value));
 			}
 		}
 
-		for (index, &offset) in self.standard.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
+		for (index, &offset) in source.standard.strings.iter().enumerate().filter(|&(_, &n)| n >= 0)
+		{
 			if let Some(&name) = names::STRING.get(&(index as u16)) {
-				let string = &self.standard.table[offset as usize..];
+				let string = &source.standard.table[offset as usize..];
 				let edge = string.iter().position(|&c| c == 0).unwrap();
 
 				database.raw(name, Value::String(Vec::from(&string[..edge])));
 			}
 		}
 
-		if let Some(extended) = self.extended {
+		if let Some(extended) = source.extended {
 			let names = extended
 				.table
 				.split(|&c| c == 0)
@@ -167,32 +169,12 @@ pub fn parse(input: &[u8]) -> IResult<&[u8], Database> {
 
 		let (input, table) = take(ext_table_size)(input)?;
 
-		Ok((
-			input,
-			Extended {
-				booleans: booleans,
-				numbers: numbers,
-				strings: strings,
-				names: names,
-				table: table,
-			},
-		))
+		Ok((input, Extended { booleans, numbers, strings, names, table }))
 	}))(input)?;
 
 	Ok((
 		input,
-		Database {
-			names: names,
-
-			standard: Standard {
-				booleans: booleans,
-				numbers: numbers,
-				strings: strings,
-				table: table,
-			},
-
-			extended: extended,
-		},
+		Database { names, standard: Standard { booleans, numbers, strings, table }, extended },
 	))
 }
 

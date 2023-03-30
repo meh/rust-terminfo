@@ -4,7 +4,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 #[rustfmt::skip]
-const BOOLEAN: &'static [&'static str] = &[
+const BOOLEAN: &[&str] = &[
 	"auto_left_margin", "auto_right_margin", "no_esc_ctlc", "ceol_standout_glitch",
 	"eat_newline_glitch", "erase_overstrike", "generic_type", "hard_copy", "has_meta_key",
 	"has_status_line", "insert_null_glitch", "memory_above", "memory_below", "move_insert_mode",
@@ -18,7 +18,7 @@ const BOOLEAN: &'static [&'static str] = &[
 ];
 
 #[rustfmt::skip]
-const NUMBER: &'static [&'static str] = &[
+const NUMBER: &[&str] = &[
 	"columns", "init_tabs", "lines", "lines_of_memory", "magic_cookie_glitch", "padding_baud_rate",
 	"virtual_terminal", "width_status_line", "num_labels", "label_height", "label_width",
 	"max_attributes", "maximum_windows", "max_colors", "max_pairs", "no_color_video",
@@ -31,7 +31,7 @@ const NUMBER: &'static [&'static str] = &[
 ];
 
 #[rustfmt::skip]
-const STRING: &'static [&'static str] = &[
+const STRING: &[&str] = &[
 	"back_tab", "bell", "carriage_return", "change_scroll_region", "clear_all_tabs",
 	"clear_screen", "clr_eol", "clr_eos", "column_address", "command_character", "cursor_address",
 	"cursor_down", "cursor_home", "cursor_invisible", "cursor_left", "cursor_mem_address",
@@ -106,7 +106,7 @@ const STRING: &'static [&'static str] = &[
 	"acs_hline", "acs_vline", "acs_plus", "memory_lock", "memory_unlock", "box_chars_1"
 ];
 
-const TERMINFO: &'static [(&'static str, &'static str)] = &[
+const TERMINFO: &[(&str, &str)] = &[
 	// Boolean names.
 	("auto_left_margin", "bw"),
 	("auto_right_margin", "am"),
@@ -516,7 +516,7 @@ const TERMINFO: &'static [(&'static str, &'static str)] = &[
 	("zero_motion", "zerom"),
 ];
 
-const TERMCAP: &'static [(&'static str, &'static str)] = &[
+const TERMCAP: &[(&str, &str)] = &[
 	// Boolean names.
 	("auto_left_margin", "bw"),
 	("auto_right_margin", "am"),
@@ -917,7 +917,7 @@ fn main() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	let keys = BOOLEAN.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static BOOLEAN_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
@@ -926,7 +926,7 @@ fn main() {
 		builder.entry(name, &index.to_string());
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	write!(&mut file, "pub static NUMBER: ::phf::Map<u16, &'static str> = ").unwrap();
 	let mut builder = phf_codegen::Map::new();
@@ -934,7 +934,7 @@ fn main() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	let keys = NUMBER.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static NUMBER_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
@@ -943,7 +943,7 @@ fn main() {
 		builder.entry(name, &index.to_string());
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	write!(&mut file, "pub static STRING: ::phf::Map<u16, &'static str> = ").unwrap();
 	let mut builder = phf_codegen::Map::new();
@@ -951,7 +951,7 @@ fn main() {
 		builder.entry(index as u16, &format!("\"{}\"", name));
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	let keys = STRING.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>();
 	write!(&mut file, "pub static STRING_INDEX: ::phf::Map<&'static str, u16> = ").unwrap();
@@ -960,7 +960,7 @@ fn main() {
 		builder.entry(name, &index.to_string());
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	write!(&mut file, "pub static TERMINFO: ::phf::Map<&'static str, &'static str> = ").unwrap();
 	let mut builder = phf_codegen::Map::new();
@@ -968,7 +968,7 @@ fn main() {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	write!(&mut file, "pub static TERMCAP: ::phf::Map<&'static str, &'static str> = ").unwrap();
 	let mut builder = phf_codegen::Map::new();
@@ -976,7 +976,7 @@ fn main() {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 
 	write!(&mut file, "pub static ALIASES: ::phf::Map<&'static str, &'static str> = ").unwrap();
 	let mut builder = phf_codegen::Map::new();
@@ -984,10 +984,10 @@ fn main() {
 		builder.entry(name, &format!("\"{}\"", value));
 	}
 	for &(value, name) in TERMCAP {
-		if TERMINFO.iter().find(|entry| name == entry.1).is_none() {
+		if !TERMINFO.iter().any(|entry| name == entry.1) {
 			builder.entry(name, &format!("\"{}\"", value));
 		}
 	}
 	write!(&mut file, "{}", builder.build()).unwrap();
-	write!(&mut file, ";\n").unwrap();
+	writeln!(&mut file, ";").unwrap();
 }

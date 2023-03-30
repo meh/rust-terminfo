@@ -171,9 +171,9 @@ pub fn unescape(i: &[u8]) -> Cow<[u8]> {
 		match iter.next() {
 			None => (),
 
-			Some(ch) if ch >= b'A' && ch <= b'Z' => output.push(ch - b'A' + 1),
+			Some(ch) if ch.is_ascii_uppercase() => output.push(ch - b'A' + 1),
 
-			Some(ch) if ch >= b'a' && ch <= b'z' => output.push(ch - b'a' + 1),
+			Some(ch) if ch.is_ascii_lowercase() => output.push(ch - b'a' + 1),
 
 			Some(ch) => output.extend(&[b'^', ch]),
 		}
@@ -184,7 +184,7 @@ pub fn unescape(i: &[u8]) -> Cow<[u8]> {
 
 	while let Some(ch) = chars.next() {
 		if ch == b'\\' || ch == b'^' {
-			let mut output = (&i[..offset]).to_vec();
+			let mut output = i[..offset].to_vec();
 
 			match ch {
 				b'\\' => escape(&mut output, &mut chars),
