@@ -12,7 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-extern crate terminfo;
 use std::env;
 
 fn main() {

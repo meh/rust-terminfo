@@ -1,5 +1,3 @@
-extern crate terminfo;
-
 use std::io;
 use terminfo::{capability as cap, Database};
 
