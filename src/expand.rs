@@ -100,9 +100,7 @@ pub struct Context {
 /// Write the expansion to `stdout`.
 ///
 /// ```
-/// # #[macro_use] extern crate terminfo;
-///
-/// use terminfo::{Database, capability as cap};
+/// use terminfo::{Database, capability as cap, expand};
 /// use std::io;
 ///
 /// # fn main() {
@@ -118,9 +116,7 @@ pub struct Context {
 /// Load the expansion for later usage.
 ///
 /// ```
-/// # #[macro_use] extern crate terminfo;
-///
-/// use terminfo::{Database, capability as cap};
+/// use terminfo::{Database, capability as cap, expand};
 /// use std::io;
 ///
 /// # fn main() {

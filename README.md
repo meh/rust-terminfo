@@ -7,8 +7,6 @@ Terminal capabilities with type-safe getters.
 Example
 -------
 ```rust
-extern crate terminfo;
-
 use std::io;
 use terminfo::{Database, capability as cap};
 
