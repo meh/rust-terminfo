@@ -16,9 +16,6 @@
 #[doc = include_str!("../README.md")]
 extern "C" {}
 
-mod error;
-pub use crate::error::{Error, Result};
-
 /// Parsers for various formats.
 mod parser;
 
@@ -31,7 +28,7 @@ pub use crate::expand::Expand;
 pub mod capability;
 pub use crate::capability::{Capability, Value};
 
-mod database;
+pub mod database;
 pub use crate::database::Database;
 
 /// Constants to deal with name differences across terminfo and termcap.
