@@ -28,114 +28,27 @@ use crate::parser::compiled;
 /// A capability database.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Database {
-	name: String,
-	aliases: Vec<String>,
-	description: String,
+	/// The terminal name.
+	pub name: String,
+
+	/// Aliases of the terminal.
+	pub aliases: Vec<String>,
+
+	/// The terminal description.
+	pub description: String,
+
 	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
-}
-
-/// Builder for a new `Database`.
-#[derive(Default, Debug)]
-pub struct Builder {
-	name: Option<String>,
-	aliases: Vec<String>,
-	description: Option<String>,
-	inner: HashMap<String, Value, BuildHasherDefault<FnvHasher>>,
-}
-
-impl Builder {
-	/// Build the database.
-	pub fn build(self) -> Result<Database, ()> {
-		Ok(Database {
-			name: self.name.ok_or(())?,
-			aliases: self.aliases,
-			description: self.description.ok_or(())?,
-			inner: self.inner,
-		})
-	}
-
-	/// Set the terminal name.
-	pub fn name<T: Into<String>>(&mut self, name: T) -> &mut Self {
-		self.name = Some(name.into());
-		self
-	}
-
-	/// Set the terminal aliases.
-	pub fn aliases<T, I>(&mut self, iter: I) -> &mut Self
-	where
-		T: Into<String>,
-		I: IntoIterator<Item = T>,
-	{
-		self.aliases = iter.into_iter().map(|a| a.into()).collect();
-		self
-	}
-
-	/// Set the terminal description.
-	pub fn description<T: Into<String>>(&mut self, description: T) -> &mut Self {
-		self.description = Some(description.into());
-		self
-	}
-
-	/// Set a capability.
-	///
-	/// ## Example
-	///
-	/// ```
-	/// use terminfo::{Database, capability as cap};
-	///
-	/// let mut info = Database::new();
-	/// info.name("foo");
-	/// info.description("foo terminal");
-	///
-	/// // Set the amount of available colors.
-	/// info.set(cap::MaxColors(16));
-	///
-	/// info.build().unwrap();
-	/// ```
-	pub fn set<'a, C: Capability<'a>>(&'a mut self, value: C) -> &mut Self {
-		if !self.inner.contains_key(C::name()) {
-			if let Some(value) = C::into(value) {
-				self.inner.insert(C::name().into(), value);
-			}
-		}
-
-		self
-	}
-
-	/// Set a raw capability.
-	///
-	/// ## Example
-	///
-	/// ```
-	/// use terminfo::{Database, capability as cap};
-	///
-	/// let mut info = Database::new();
-	/// info.name("foo");
-	/// info.description("foo terminal");
-	///
-	/// // Set the amount of available colors.
-	/// info.raw("colors", 16);
-	///
-	/// info.build().unwrap();
-	/// ```
-	pub fn raw<S: AsRef<str>, V: Into<Value>>(&mut self, name: S, value: V) -> &mut Self {
-		let name = name.as_ref();
-		let name = names::ALIASES.get(name).copied().unwrap_or(name);
-
-		if !self.inner.contains_key(name) {
-			self.inner.insert(name.into(), value.into());
-		}
-
-		self
-	}
 }
 
 impl Database {
-	/// Create a database builder for constucting a database.
-	// Clippy is right, the naming is is unconventional, but it’s probably not worth changing
-	#[allow(clippy::new_ret_no_self)]
-	pub fn new() -> Builder {
-		Builder::default()
+	/// Create a new empty terminfo database with its name and description.
+	pub fn new<N: Into<String>, D: Into<String>>(name: N, description: D) -> Self {
+		Self {
+			name: name.into(),
+			aliases: Vec::new(),
+			description: description.into(),
+			inner: HashMap::default(),
+		}
 	}
 
 	/// Load a database from the current environment.
@@ -230,21 +143,6 @@ impl Database {
 		}
 	}
 
-	/// The terminal name.
-	pub fn name(&self) -> &str {
-		&self.name
-	}
-
-	/// The terminal aliases.
-	pub fn aliases(&self) -> &[String] {
-		&self.aliases
-	}
-
-	/// The terminal description.
-	pub fn description(&self) -> &str {
-		&self.description
-	}
-
 	/// Get a capability.
 	///
 	/// ## Example
@@ -257,6 +155,24 @@ impl Database {
 	/// ```
 	pub fn get<'a, C: Capability<'a>>(&'a self) -> Option<C> {
 		C::from(self.inner.get(C::name()))
+	}
+
+	/// Set a capability.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// let mut info = terminfo::Database::new("foo", "foo terminal");
+	///
+	/// // Set the amount of available colors.
+	/// info.set(terminfo::capability::MaxColors(16));
+	/// ```
+	pub fn set<'a, C: Capability<'a>>(&mut self, value: C) {
+		if !self.inner.contains_key(C::name()) {
+			if let Some(value) = C::into(value) {
+				self.inner.insert(C::name().into(), value);
+			}
+		}
 	}
 
 	/// Get a capability by name.
@@ -279,5 +195,29 @@ impl Database {
 		let name = names::ALIASES.get(name).copied().unwrap_or(name);
 
 		self.inner.get(name)
+	}
+
+	/// Set a raw capability.
+	///
+	/// ## Note
+	///
+	/// This interface only makes sense for extended capabilities since they
+	/// don't have standardized types.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// let mut info = terminfo::Database::new("foo", "foo terminal");
+	///
+	/// // Set the amount of available colors.
+	/// info.set_raw("colors", 16);
+	/// ```
+	pub fn set_raw<S: AsRef<str>, V: Into<Value>>(&mut self, name: S, value: V) {
+		let name = name.as_ref();
+		let name = names::ALIASES.get(name).copied().unwrap_or(name);
+
+		if !self.inner.contains_key(name) {
+			self.inner.insert(name.into(), value.into());
+		}
 	}
 }
