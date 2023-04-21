@@ -155,9 +155,10 @@ impl Database {
 		// See https://manpages.debian.org/buster/ncurses-bin/terminfo.5.en.html#Fetching_Compiled_Descriptions
 		let mut search = Vec::<PathBuf>::new();
 
+		#[allow(deprecated)]
 		if let Some(dir) = env::var_os("TERMINFO") {
 			search.push(dir.into());
-		} else if let Some(mut home) = dirs::home_dir() {
+		} else if let Some(mut home) = std::env::home_dir() {
 			home.push(".terminfo");
 			search.push(home);
 		}
