@@ -1,29 +1,30 @@
 terminfo
 ========
-[![Crates.io](https://img.shields.io/crates/v/terminfo.svg)](https://crates.io/crates/terminfo) [![Crates.io](https://img.shields.io/crates/d/terminfo.svg)](https://crates.io/crates/terminfo) ![WTFPL](http://img.shields.io/badge/license-WTFPL-blue.svg) [![Build Status](https://api.travis-ci.org/meh/rust-terminfo.svg?branch=master)](https://travis-ci.org/meh/rust-terminfo)
+[![Crates.io](https://img.shields.io/crates/v/terminfo.svg)](https://crates.io/crates/terminfo) [![Crates.io](https://img.shields.io/crates/d/terminfo.svg)](https://crates.io/crates/terminfo) ![WTFPL](http://img.shields.io/badge/license-WTFPL-blue.svg) [![Build Status](https://github.com/meh/rust-terminfo/actions/workflows/rust.yml/badge.svg)](https://github.com/meh/rust-terminfo/actions/workflows/rust.yml)
 
 Terminal capabilities with type-safe getters.
 
+[Documentation](https://docs.rs/terminfo/latest/terminfo/)
+
 Example
 -------
+
 ```rust
 use std::io;
-use terminfo::{Database, capability as cap};
+use terminfo::{capability as cap, Database};
 
 fn main() {
-  let info = Database::from_env().unwrap();
+	let info = Database::from_env().unwrap();
 
-  if let Some(cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
-    println!("The terminal supports {} colors.", n);
-  }
-  else {
-    println!("The terminal does not support colors, what year is this?");
-  }
+	if let Some(cap::MaxColors(n)) = info.get::<cap::MaxColors>() {
+		println!("The terminal supports {} colors.", n);
+	} else {
+		println!("The terminal does not support colors, what year is this?");
+	}
 
-  if let Some(flash) = info.get::<cap::FlashScreen>() {
+	if let Some(flash) = info.get::<cap::FlashScreen>() {
 		flash.expand().to(io::stdout()).unwrap();
-  }
-	else {
+	} else {
 		println!("FLASH GORDON!");
 	}
 
