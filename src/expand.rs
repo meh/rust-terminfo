@@ -12,10 +12,10 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::char;
+use std::fmt::{self, Display, Formatter};
 use std::io::{BufWriter, Write};
+use std::{char, io};
 
-use crate::error;
 use crate::parser::expansion::*;
 
 /// Trait for items that can be expanded.
@@ -25,7 +25,7 @@ pub trait Expand {
 		output: W,
 		parameters: &[Parameter],
 		context: &mut Context,
-	) -> error::Result<()>;
+	) -> Result<(), Error>;
 }
 
 /// An expansion parameter.
@@ -173,7 +173,7 @@ impl Expand for [u8] {
 		output: W,
 		parameters: &[Parameter],
 		context: &mut Context,
-	) -> error::Result<()> {
+	) -> Result<(), Error> {
 		let mut output = BufWriter::new(output);
 		let mut input = self;
 		let mut params: [Parameter; 9] = Default::default();
@@ -193,7 +193,7 @@ impl Expand for [u8] {
 						item
 					}
 
-					Err(_) => return Err(error::Expand::Invalid.into()),
+					Err(_) => return Err(Error::Parse(ParseError)),
 				}
 			};
 		}
@@ -229,12 +229,12 @@ impl Expand for [u8] {
 							}
 						}
 
-						return Err(error::Expand::Invalid.into());
+						return Err(ParseError.into());
 					}
 
 					Some(_) => (),
 
-					None => return Err(error::Expand::StackUnderflow.into()),
+					None => return Err(StackUnderflow.into()),
 				},
 
 				Item::Conditional(Conditional::Else) if conditional => {
@@ -252,12 +252,12 @@ impl Expand for [u8] {
 						}
 					}
 
-					return Err(error::Expand::Invalid.into());
+					return Err(ParseError.into());
 				}
 
-				Item::Conditional(..) => return Err(error::Expand::Invalid.into()),
+				Item::Conditional(..) => return Err(ParseError.into()),
 
-				Item::String(value) => output.write_all(value)?,
+				Item::String(value) => output.write_all(value).map_err(Error::Write)?,
 
 				Item::Constant(Constant::Character(ch)) => {
 					stack.push(Parameter::Number(ch as i32));
@@ -273,11 +273,11 @@ impl Expand for [u8] {
 					}
 
 					Some(_) => {
-						return Err(error::Expand::TypeMismatch.into());
+						return Err(TypeMismatch.into());
 					}
 
 					None => {
-						return Err(error::Expand::StackUnderflow.into());
+						return Err(StackUnderflow.into());
 					}
 				},
 
@@ -293,7 +293,7 @@ impl Expand for [u8] {
 							context.fixed[index as usize] = value.clone();
 						}
 					} else {
-						return Err(error::Expand::StackUnderflow.into());
+						return Err(StackUnderflow.into());
 					}
 				}
 
@@ -313,7 +313,7 @@ impl Expand for [u8] {
 						params[0] = Parameter::Number(x + 1);
 						params[1] = Parameter::Number(y + 1);
 					} else {
-						return Err(error::Expand::TypeMismatch.into());
+						return Err(TypeMismatch.into());
 					}
 				}
 
@@ -353,9 +353,9 @@ impl Expand for [u8] {
 						}))
 					}
 
-					(Some(_), Some(_)) => return Err(error::Expand::TypeMismatch.into()),
+					(Some(_), Some(_)) => return Err(TypeMismatch.into()),
 
-					_ => return Err(error::Expand::StackUnderflow.into()),
+					_ => return Err(StackUnderflow.into()),
 				},
 
 				Item::Operation(Operation::Unary(operation)) => match stack.pop() {
@@ -364,9 +364,9 @@ impl Expand for [u8] {
 						Unary::NOT => !x,
 					})),
 
-					Some(_) => return Err(error::Expand::TypeMismatch.into()),
+					Some(_) => return Err(TypeMismatch.into()),
 
-					_ => return Err(error::Expand::StackUnderflow.into()),
+					_ => return Err(StackUnderflow.into()),
 				},
 
 				Item::Print(p) => {
@@ -412,18 +412,19 @@ impl Expand for [u8] {
 
 					macro_rules! w {
 						($value:expr) => (
-							output.write_all($value)?
+							output.write_all($value).map_err(Error::Write)?
 						);
 
 						($($item:tt)*) => (
-							write!(output, $($item)*)?
+							write!(output, $($item)*).map_err(Error::Write)?
 						);
 					}
 
 					macro_rules! f {
 						(by $length:expr) => (
+                            let spacer = if p.flags.space { b" " } else { b"0" };
 							for _ in 0 .. p.flags.width - $length {
-								output.write_all(if p.flags.space { b" " } else { b"0" })?;
+								output.write_all(spacer).map_err(Error::Write)?;
 							}
 						);
 
@@ -465,10 +466,9 @@ impl Expand for [u8] {
 							w!("{}", value as u8 as char)
 						}
 
-						(Format::Uni, Some(Parameter::Number(value))) => w!(
-							"{}",
-							char::from_u32(value as u32).ok_or(error::Expand::TypeMismatch)?
-						),
+						(Format::Uni, Some(Parameter::Number(value))) => {
+							w!("{}", char::from_u32(value as u32).ok_or(TypeMismatch)?)
+						}
 
 						(Format::Dec, Some(Parameter::Number(value))) => {
 							f!(before value);
@@ -518,9 +518,9 @@ impl Expand for [u8] {
 							f!(after value);
 						}
 
-						(_, Some(_)) => return Err(error::Expand::TypeMismatch.into()),
+						(_, Some(_)) => return Err(TypeMismatch.into()),
 
-						(_, None) => return Err(error::Expand::StackUnderflow.into()),
+						(_, None) => return Err(StackUnderflow.into()),
 					}
 				}
 			}
@@ -529,6 +529,99 @@ impl Expand for [u8] {
 		Ok(())
 	}
 }
+
+/// An error in expanding.
+#[derive(Debug)]
+pub enum Error {
+	/// An error occurred writing out the expansion.
+	Write(io::Error),
+	/// An error occurred parsing expansion string.
+	Parse(ParseError),
+	/// There was a type mismatch while expanding.
+	TypeMismatch(TypeMismatch),
+	/// The stack underflowed while expanding.
+	StackUnderflow(StackUnderflow),
+}
+
+impl From<ParseError> for Error {
+	fn from(e: ParseError) -> Self {
+		Self::Parse(e)
+	}
+}
+
+impl From<TypeMismatch> for Error {
+	fn from(e: TypeMismatch) -> Self {
+		Self::TypeMismatch(e)
+	}
+}
+
+impl From<StackUnderflow> for Error {
+	fn from(e: StackUnderflow) -> Self {
+		Self::StackUnderflow(e)
+	}
+}
+
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("failed to expand terminfo string")
+	}
+}
+
+impl std::error::Error for Error {
+	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+		match self {
+			Self::Write(e) => Some(e),
+			Self::Parse(e) => Some(e),
+			Self::TypeMismatch(e) => Some(e),
+			Self::StackUnderflow(e) => Some(e),
+		}
+	}
+}
+
+/// An error occurred parsing the expansion.
+///
+/// A cause of [`Error`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct ParseError;
+
+impl Display for ParseError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("expansion string is invalid")
+	}
+}
+
+impl std::error::Error for ParseError {}
+
+/// There was a type mismatch while expanding.
+///
+/// A root cause of [`Error`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct TypeMismatch;
+
+impl Display for TypeMismatch {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("type mismatch")
+	}
+}
+
+impl std::error::Error for TypeMismatch {}
+
+/// The stack underflowed while expanding.
+///
+/// A root cause of [`Error`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct StackUnderflow;
+
+impl Display for StackUnderflow {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("stack underflow")
+	}
+}
+
+impl std::error::Error for StackUnderflow {}
 
 #[cfg(test)]
 mod test {

@@ -17,8 +17,7 @@
 use std::borrow::Cow;
 use std::io::Write;
 
-use crate::error;
-use crate::expand::{Context, Expand, Parameter};
+use crate::expand::{self, Context, Expand, Parameter};
 
 /// A trait for any object that will represent a terminal capability.
 pub trait Capability<'a>: Sized {
@@ -61,7 +60,7 @@ impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
 	}
 
 	/// Expand to the given output.
-	pub fn to<W: Write>(self, output: W) -> error::Result<()> {
+	pub fn to<W: Write>(self, output: W) -> Result<(), expand::Error> {
 		self.string.as_ref().expand(
 			output,
 			&self.params,
@@ -70,7 +69,7 @@ impl<'a, T: AsRef<[u8]>> Expansion<'a, T> {
 	}
 
 	/// Expand into a vector.
-	pub fn to_vec(self) -> error::Result<Vec<u8>> {
+	pub fn to_vec(self) -> Result<Vec<u8>, expand::Error> {
 		let mut result = Vec::with_capacity(self.string.as_ref().len());
 		self.to(&mut result)?;
 		Ok(result)
