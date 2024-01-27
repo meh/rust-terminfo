@@ -180,6 +180,8 @@ impl Database {
 		search.push("/etc/terminfo".into());
 		search.push("/lib/terminfo".into());
 		search.push("/usr/share/terminfo".into());
+		search.push("/usr/local/share/terminfo".into());
+		search.push("/usr/local/share/site-terminfo".into());
 		search.push("/boot/system/data/terminfo".into());
 
 		for path in search {
