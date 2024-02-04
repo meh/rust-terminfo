@@ -35,24 +35,22 @@ impl<'a> From<Database<'a>> for crate::Database {
 		let mut names = source
 			.names
 			.split(|&c| c == b'|')
-			.map(|s| unsafe { str::from_utf8_unchecked(s) })
-			.map(|s| s.trim())
-			.collect::<Vec<_>>();
+			.map(|s| (unsafe { str::from_utf8_unchecked(s) }).trim().to_owned());
 
-		let mut database = crate::Database::new();
-
-		database.name(names.remove(0)).description(names.pop().unwrap()).aliases(names);
+		let mut database = crate::Database::new(names.next().unwrap(), "");
+		database.aliases = names.collect();
+		database.description = database.aliases.pop().unwrap();
 
 		for (index, _) in source.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
-				database.raw(name, Value::True);
+				database.set_raw(name, Value::True);
 			}
 		}
 
 		for (index, &value) in source.standard.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0)
 		{
 			if let Some(&name) = names::NUMBER.get(&(index as u16)) {
-				database.raw(name, Value::Number(value));
+				database.set_raw(name, Value::Number(value));
 			}
 		}
 
@@ -62,7 +60,7 @@ impl<'a> From<Database<'a>> for crate::Database {
 				let string = &source.standard.table[offset as usize..];
 				let edge = string.iter().position(|&c| c == 0).unwrap();
 
-				database.raw(name, Value::String(Vec::from(&string[..edge])));
+				database.set_raw(name, Value::String(Vec::from(&string[..edge])));
 			}
 		}
 
@@ -75,25 +73,25 @@ impl<'a> From<Database<'a>> for crate::Database {
 				.collect::<Vec<_>>();
 
 			for (index, _) in extended.booleans.iter().enumerate().filter(|&(_, &value)| value) {
-				database.raw(names[index], Value::True);
+				database.set_raw(names[index], Value::True);
 			}
 
 			for (index, &value) in extended.numbers.iter().enumerate().filter(|&(_, &n)| n >= 0) {
-				database.raw(names[extended.booleans.len() + index], Value::Number(value));
+				database.set_raw(names[extended.booleans.len() + index], Value::Number(value));
 			}
 
 			for (index, &offset) in extended.strings.iter().enumerate().filter(|&(_, &n)| n >= 0) {
 				let string = &extended.table[offset as usize..];
 				let edge = string.iter().position(|&c| c == 0).unwrap();
 
-				database.raw(
+				database.set_raw(
 					names[extended.booleans.len() + extended.numbers.len() + index],
 					Value::String(Vec::from(&string[..edge])),
 				);
 			}
 		}
 
-		database.build().unwrap()
+		database
 	}
 }
 
@@ -218,18 +216,18 @@ mod test {
 
 	#[test]
 	fn name() {
-		load("tests/cancer-256color", |db| assert_eq!("cancer-256color", db.name()));
+		load("tests/cancer-256color", |db| assert_eq!("cancer-256color", db.name));
 	}
 
 	#[test]
 	fn aliases() {
-		load("tests/st-256color", |db| assert_eq!(vec!["stterm-256color"], db.aliases()));
+		load("tests/st-256color", |db| assert_eq!(vec!["stterm-256color"], db.aliases));
 	}
 
 	#[test]
 	fn description() {
 		load("tests/cancer-256color", |db| {
-			assert_eq!("terminal cancer with 256 colors", db.description())
+			assert_eq!("terminal cancer with 256 colors", db.description)
 		});
 	}
 
@@ -253,6 +251,6 @@ mod test {
 
 	#[test]
 	fn bigger_numbers() {
-		load("tests/xterm-256color", |db| assert_eq!("xterm-256color", db.name()));
+		load("tests/xterm-256color", |db| assert_eq!("xterm-256color", db.name));
 	}
 }
