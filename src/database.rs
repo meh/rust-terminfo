@@ -49,7 +49,7 @@ impl Builder {
 		Ok(Database {
 			name: self.name.ok_or(())?,
 			aliases: self.aliases,
-			description: self.description.ok_or(())?,
+			description: self.description.unwrap_or_default(),
 			inner: self.inner,
 		})
 	}
