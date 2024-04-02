@@ -41,7 +41,9 @@ impl<'a> From<Database<'a>> for crate::Database {
 
 		let mut database = crate::Database::new();
 
-		database.name(names.remove(0)).description(names.pop().unwrap()).aliases(names);
+		database.name(names.remove(0));
+		names.pop().map(|name| database.description(name));
+		database.aliases(names);
 
 		for (index, _) in source.standard.booleans.iter().enumerate().filter(|&(_, &value)| value) {
 			if let Some(&name) = names::BOOLEAN.get(&(index as u16)) {
