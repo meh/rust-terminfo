@@ -92,7 +92,7 @@ impl Builder {
 	///
 	/// info.build().unwrap();
 	/// ```
-	pub fn set<'a, C: Capability<'a>>(&'a mut self, value: C) -> &mut Self {
+	pub fn set<'a, C: Capability<'a>>(&'a mut self, value: C) -> &'a mut Self {
 		if !self.inner.contains_key(C::name()) {
 			if let Some(value) = C::into(value) {
 				self.inner.insert(C::name().into(), value);

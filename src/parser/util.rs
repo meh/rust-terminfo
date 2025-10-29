@@ -114,7 +114,7 @@ pub fn number(i: &[u8]) -> i32 {
 	n
 }
 
-pub fn unescape(i: &[u8]) -> Cow<[u8]> {
+pub fn unescape(i: &[u8]) -> Cow<'_, [u8]> {
 	fn escape<I: Iterator<Item = u8>>(output: &mut Vec<u8>, iter: &mut I) {
 		match iter.next() {
 			None => (),

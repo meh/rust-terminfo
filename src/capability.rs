@@ -242,7 +242,7 @@ macro_rules! define {
 		impl<'a> $ident<'a> {
 			/// Begin expanding the capability.
 			#[inline]
-			pub fn expand(&self) -> Expansion<$ident> {
+			pub fn expand(&self) -> Expansion<'_, $ident<'_>> {
 				Expansion {
 					string:  self,
 					params:  Default::default(),
