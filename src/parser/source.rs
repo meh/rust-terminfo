@@ -37,11 +37,11 @@ pub enum Item<'a> {
 	Disable(&'a str),
 }
 
-pub fn parse(input: &[u8]) -> IResult<&[u8], Item> {
+pub fn parse(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	alt((comment, definition, disable, entry))(input)
 }
 
-fn comment(input: &[u8]) -> IResult<&[u8], Item> {
+fn comment(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = tag("#")(input)?;
 	let (input, content) = map_res(terminated(take_until("\n"), tag("\n")), str::from_utf8)(input)?;
 	let (input, _) = opt(complete(take_while(is_eol)))(input)?;
@@ -49,7 +49,7 @@ fn comment(input: &[u8]) -> IResult<&[u8], Item> {
 	Ok((input, Item::Comment(content.trim())))
 }
 
-fn definition(input: &[u8]) -> IResult<&[u8], Item> {
+fn definition(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, name) =
 		map(take_while(is_printable_no_pipe), |n| unsafe { str::from_utf8_unchecked(n) })(input)?;
 
@@ -72,7 +72,7 @@ fn definition(input: &[u8]) -> IResult<&[u8], Item> {
 	}))
 }
 
-fn disable(input: &[u8]) -> IResult<&[u8], Item> {
+fn disable(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = ws(input)?;
 	let (input, _) = take_while(is_ws)(input)?;
 	let (input, _) = tag("@")(input)?;
@@ -90,7 +90,7 @@ fn disable(input: &[u8]) -> IResult<&[u8], Item> {
 	Ok((input, Item::Disable(name)))
 }
 
-fn entry(input: &[u8]) -> IResult<&[u8], Item> {
+fn entry(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = ws(input)?;
 	let (input, _) = take_while(is_ws)(input)?;
 

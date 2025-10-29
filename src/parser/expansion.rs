@@ -115,30 +115,30 @@ pub struct Flags {
 	pub space: bool,
 }
 
-pub fn parse(input: &[u8]) -> IResult<&[u8], Item> {
+pub fn parse(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	alt((expansion, string))(input)
 }
 
-fn string(input: &[u8]) -> IResult<&[u8], Item> {
+fn string(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	map(complete::take_till(|b| b == b'%'), Item::String)(input)
 }
 
-fn expansion(input: &[u8]) -> IResult<&[u8], Item> {
+fn expansion(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = tag("%")(input)?;
 	let (input, item) = alt((percent, constant, variable, operation, conditional, print))(input)?;
 
 	Ok((input, item))
 }
 
-fn percent(input: &[u8]) -> IResult<&[u8], Item> {
+fn percent(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	value(Item::String(b"%"), tag("%"))(input)
 }
 
-fn constant(input: &[u8]) -> IResult<&[u8], Item> {
+fn constant(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	alt((constant_char, constant_integer))(input)
 }
 
-fn constant_char(input: &[u8]) -> IResult<&[u8], Item> {
+fn constant_char(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = tag("'")(input)?;
 	let (input, ch) = take(1_usize)(input)?;
 	let (input, _) = tag("'")(input)?;
@@ -146,7 +146,7 @@ fn constant_char(input: &[u8]) -> IResult<&[u8], Item> {
 	Ok((input, Item::Constant(Constant::Character(ch[0]))))
 }
 
-fn constant_integer(input: &[u8]) -> IResult<&[u8], Item> {
+fn constant_integer(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = tag("{")(input)?;
 	let (input, digit) = take_while(is_digit)(input)?;
 	let (input, _) = tag("}")(input)?;
@@ -154,7 +154,7 @@ fn constant_integer(input: &[u8]) -> IResult<&[u8], Item> {
 	Ok((input, Item::Constant(Constant::Integer(number(digit)))))
 }
 
-fn variable(input: &[u8]) -> IResult<&[u8], Item> {
+fn variable(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, c) = take(1_usize)(input)?;
 	match c {
 		b"l" => Ok((input, Item::Variable(Variable::Length))),
@@ -183,7 +183,7 @@ fn variable(input: &[u8]) -> IResult<&[u8], Item> {
 	}
 }
 
-fn operation(input: &[u8]) -> IResult<&[u8], Item> {
+fn operation(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, c) = take(1_usize)(input)?;
 	match c {
 		b"+" => Ok((input, Item::Operation(Operation::Binary(Binary::Add)))),
@@ -210,7 +210,7 @@ fn operation(input: &[u8]) -> IResult<&[u8], Item> {
 	}
 }
 
-fn conditional(input: &[u8]) -> IResult<&[u8], Item> {
+fn conditional(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, c) = take(1_usize)(input)?;
 	match c {
 		b"?" => Ok((input, Item::Conditional(Conditional::If))),
@@ -222,7 +222,7 @@ fn conditional(input: &[u8]) -> IResult<&[u8], Item> {
 	}
 }
 
-fn print(input: &[u8]) -> IResult<&[u8], Item> {
+fn print(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 	let (input, _) = opt(tag(":"))(input)?;
 
 	let (input, flags) = take_while(is_flag)(input)?;

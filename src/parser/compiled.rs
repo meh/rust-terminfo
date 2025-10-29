@@ -125,7 +125,7 @@ fn bit_size(magic: &[u8]) -> usize {
 	}
 }
 
-pub fn parse(input: &[u8]) -> IResult<&[u8], Database> {
+pub fn parse(input: &[u8]) -> IResult<&[u8], Database<'_>> {
 	let (input, magic) = alt((tag([0x1A, 0x01]), tag([0x1E, 0x02])))(input)?;
 
 	let (input, name_size) = size(input)?;
