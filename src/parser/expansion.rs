@@ -55,8 +55,8 @@ pub enum Operation {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Unary {
-	Not,
-	NOT,
+	LogicalNot,
+	BitwiseNot,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
@@ -67,12 +67,12 @@ pub enum Binary {
 	Divide,
 	Remainder,
 
-	AND,
-	OR,
-	XOR,
+	BitwiseAnd,
+	BitwiseOr,
+	BitwiseXor,
 
-	And,
-	Or,
+	LogicalAnd,
+	LogicalOr,
 
 	Equal,
 	Greater,
@@ -100,8 +100,8 @@ pub enum Format {
 	Str,
 	Dec,
 	Oct,
-	Hex,
-	HEX,
+	LowerHex,
+	UpperHex,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Default, Debug)]
@@ -193,14 +193,14 @@ fn operation(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 		b"m" => Ok((input, Item::Operation(Operation::Binary(Binary::Remainder)))),
 		b"i" => Ok((input, Item::Operation(Operation::Increment))),
 
-		b"&" => Ok((input, Item::Operation(Operation::Binary(Binary::AND)))),
-		b"|" => Ok((input, Item::Operation(Operation::Binary(Binary::OR)))),
-		b"^" => Ok((input, Item::Operation(Operation::Binary(Binary::XOR)))),
-		b"~" => Ok((input, Item::Operation(Operation::Unary(Unary::NOT)))),
+		b"&" => Ok((input, Item::Operation(Operation::Binary(Binary::BitwiseAnd)))),
+		b"|" => Ok((input, Item::Operation(Operation::Binary(Binary::BitwiseOr)))),
+		b"^" => Ok((input, Item::Operation(Operation::Binary(Binary::BitwiseXor)))),
+		b"~" => Ok((input, Item::Operation(Operation::Unary(Unary::BitwiseNot)))),
 
-		b"A" => Ok((input, Item::Operation(Operation::Binary(Binary::And)))),
-		b"O" => Ok((input, Item::Operation(Operation::Binary(Binary::Or)))),
-		b"!" => Ok((input, Item::Operation(Operation::Unary(Unary::Not)))),
+		b"A" => Ok((input, Item::Operation(Operation::Binary(Binary::LogicalAnd)))),
+		b"O" => Ok((input, Item::Operation(Operation::Binary(Binary::LogicalOr)))),
+		b"!" => Ok((input, Item::Operation(Operation::Unary(Unary::LogicalNot)))),
 
 		b"=" => Ok((input, Item::Operation(Operation::Binary(Binary::Equal)))),
 		b">" => Ok((input, Item::Operation(Operation::Binary(Binary::Greater)))),
@@ -252,8 +252,8 @@ fn print(input: &[u8]) -> IResult<&[u8], Item<'_>> {
 			format: match format {
 				'd' => Format::Dec,
 				'o' => Format::Oct,
-				'x' => Format::Hex,
-				'X' => Format::HEX,
+				'x' => Format::LowerHex,
+				'X' => Format::UpperHex,
 				's' => Format::Str,
 				'c' => Format::Chr,
 				'u' => Format::Uni,
@@ -340,25 +340,25 @@ mod test {
 			Operation(Operation::Binary(Binary::Remainder)));
 
 		test!(b"%&" =>
-			Operation(Operation::Binary(Binary::AND)));
+			Operation(Operation::Binary(Binary::BitwiseAnd)));
 
 		test!(b"%|" =>
-			Operation(Operation::Binary(Binary::OR)));
+			Operation(Operation::Binary(Binary::BitwiseOr)));
 
 		test!(b"%^" =>
-			Operation(Operation::Binary(Binary::XOR)));
+			Operation(Operation::Binary(Binary::BitwiseXor)));
 
 		test!(b"%~" =>
-			Operation(Operation::Unary(Unary::NOT)));
+			Operation(Operation::Unary(Unary::BitwiseNot)));
 
 		test!(b"%A" =>
-			Operation(Operation::Binary(Binary::And)));
+			Operation(Operation::Binary(Binary::LogicalAnd)));
 
 		test!(b"%O" =>
-			Operation(Operation::Binary(Binary::Or)));
+			Operation(Operation::Binary(Binary::LogicalOr)));
 
 		test!(b"%!" =>
-			Operation(Operation::Unary(Unary::Not)));
+			Operation(Operation::Unary(Unary::LogicalNot)));
 
 		test!(b"%=" =>
 			Operation(Operation::Binary(Binary::Equal)));
