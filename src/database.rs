@@ -11,17 +11,18 @@
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
+//! A capability database.
 
 use fnv::FnvHasher;
 use std::collections::HashMap;
-use std::env;
-use std::fs::{self, File};
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
+use std::fs;
 use std::hash::BuildHasherDefault;
-use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::{env, io};
 
 use crate::capability::{Capability, Value};
-use crate::error::{self, Error};
 use crate::names;
 use crate::parser::compiled;
 
@@ -139,18 +140,19 @@ impl Database {
 	}
 
 	/// Load a database from the current environment.
-	pub fn from_env() -> error::Result<Self> {
+	pub fn from_env() -> Result<Self, FromEnvError> {
 		if let Ok(name) = env::var("TERM") {
-			Self::from_name(name)
+			Self::from_name(name).map_err(FromEnvError::FromName)
 		} else {
-			Err(Error::NotFound)
+			Err(FromEnvError::NoTerm(NoTerm))
 		}
 	}
 
 	/// Load a database for the given name.
-	pub fn from_name<N: AsRef<str>>(name: N) -> error::Result<Self> {
+	pub fn from_name<N: AsRef<str>>(name: N) -> Result<Self, FromNameError> {
 		let name = name.as_ref();
-		let first = name.chars().next().ok_or(Error::NotFound)?;
+		let not_found = || FromNameError::NotFound(NotFound { name: name.into() });
+		let first = name.chars().next().ok_or_else(not_found)?;
 
 		// See https://manpages.debian.org/buster/ncurses-bin/terminfo.5.en.html#Fetching_Compiled_Descriptions
 		let mut search = Vec::<PathBuf>::new();
@@ -196,7 +198,7 @@ impl Database {
 				path.push(name);
 
 				if fs::metadata(&path).is_ok() {
-					return Self::from_path(path);
+					return Self::from_path(path).map_err(FromNameError::Load);
 				}
 			}
 
@@ -207,29 +209,30 @@ impl Database {
 				path.push(name);
 
 				if fs::metadata(&path).is_ok() {
-					return Self::from_path(path);
+					return Self::from_path(path).map_err(FromNameError::Load);
 				}
 			}
 		}
 
-		Err(Error::NotFound)
+		Err(not_found())
 	}
 
 	/// Load a database from the given path.
-	pub fn from_path<P: AsRef<Path>>(path: P) -> error::Result<Self> {
-		let mut file = File::open(path)?;
-		let mut buffer = Vec::new();
-		file.read_to_end(&mut buffer)?;
-
-		Self::from_buffer(buffer)
+	pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoadError> {
+		let path = path.as_ref();
+		(|| {
+			let buffer = fs::read(path).map_err(LoadErrorKind::Read)?;
+			Self::from_buffer(buffer).map_err(LoadErrorKind::Parse)
+		})()
+		.map_err(|kind| LoadError { path: path.into(), kind })
 	}
 
 	/// Load a database from a buffer.
-	pub fn from_buffer<T: AsRef<[u8]>>(buffer: T) -> error::Result<Self> {
+	pub fn from_buffer<T: AsRef<[u8]>>(buffer: T) -> Result<Self, ParseError> {
 		if let Ok((_, database)) = compiled::parse(buffer.as_ref()) {
 			Ok(database.into())
 		} else {
-			Err(Error::Parse)
+			Err(ParseError)
 		}
 	}
 
@@ -284,3 +287,138 @@ impl Database {
 		self.inner.get(name)
 	}
 }
+
+/// An error in [`Database::from_env`].
+#[derive(Debug)]
+pub enum FromEnvError {
+	/// The `$TERM` environment variable was not set.
+	NoTerm(NoTerm),
+	/// The terminal name was read, but loading the database failed.
+	FromName(FromNameError),
+}
+
+impl Display for FromEnvError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("failed to load terminfo database")
+	}
+}
+
+impl Error for FromEnvError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		match self {
+			Self::NoTerm(e) => Some(e),
+			Self::FromName(e) => e.source(),
+		}
+	}
+}
+
+/// The `$TERM` environment variable was not set.
+///
+/// A root cause of [`FromEnvError`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct NoTerm;
+
+impl Display for NoTerm {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("no `$TERM` environment variable")
+	}
+}
+
+impl Error for NoTerm {}
+
+/// An error in [`Database::from_name`].
+#[derive(Debug)]
+pub enum FromNameError {
+	/// The terminfo entry was not found.
+	NotFound(NotFound),
+	/// The terminfo file could not be loaded.
+	Load(LoadError),
+}
+
+impl Display for FromNameError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("failed to load terminfo database")
+	}
+}
+
+impl Error for FromNameError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		match self {
+			Self::NotFound(e) => Some(e),
+			Self::Load(e) => Some(e),
+		}
+	}
+}
+
+/// No terminfo database was found.
+///
+/// A root cause of [`FromNameError`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct NotFound {
+	name: Box<str>,
+}
+
+impl NotFound {
+	/// Get the name of the terminfo database.
+	#[must_use]
+	pub fn name(&self) -> &str {
+		&self.name
+	}
+}
+
+impl Display for NotFound {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "no terminfo database found for `{}`", self.name)
+	}
+}
+
+impl Error for NotFound {}
+
+/// An error loading the database, returned by [`Database::from_path`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct LoadError {
+	/// The path the database is located at.
+	pub path: Box<Path>,
+	/// The cause of the error.
+	pub kind: LoadErrorKind,
+}
+
+impl Display for LoadError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "failed to load terminfo database {}", self.path.display())
+	}
+}
+
+impl Error for LoadError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		match &self.kind {
+			LoadErrorKind::Read(e) => Some(e),
+			LoadErrorKind::Parse(e) => Some(e),
+		}
+	}
+}
+
+/// A cause of a [`LoadError`].
+#[derive(Debug)]
+pub enum LoadErrorKind {
+	/// An error occurred reading the file.
+	Read(io::Error),
+	/// There was an error parsing the file.
+	Parse(ParseError),
+}
+
+/// An error parsing the database, returned by [`Database::from_buffer`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct ParseError;
+
+impl Display for ParseError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("failed to parse terminfo database")
+	}
+}
+
+impl Error for ParseError {}
