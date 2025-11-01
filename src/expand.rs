@@ -185,21 +185,8 @@ impl Expand for [u8] {
 			*dest = source.clone();
 		}
 
-		macro_rules! next {
-			() => {
-				match parse(input) {
-					Ok((rest, item)) => {
-						input = rest;
-						item
-					}
-
-					Err(_) => return Err(error::Expand::Invalid.into()),
-				}
-			};
-		}
-
-		'main: while !input.is_empty() {
-			match next!() {
+		while !input.is_empty() {
+			match next_item(&mut input)? {
 				Item::Conditional(Conditional::If) => {
 					conditional = true;
 				}
@@ -212,24 +199,21 @@ impl Expand for [u8] {
 					Some(Parameter::Number(0)) => {
 						let mut level = 0;
 
-						while !input.is_empty() {
-							match next!() {
-								Item::Conditional(Conditional::End)
-								| Item::Conditional(Conditional::Else)
+						loop {
+							if input.is_empty() {
+								return Err(error::Expand::Invalid.into());
+							}
+							match next_item(&mut input)? {
+								Item::Conditional(Conditional::End | Conditional::Else)
 									if level == 0 =>
 								{
-									continue 'main
+									break
 								}
-
 								Item::Conditional(Conditional::If) => level += 1,
-
 								Item::Conditional(Conditional::End) => level -= 1,
-
 								_ => (),
 							}
 						}
-
-						return Err(error::Expand::Invalid.into());
 					}
 
 					Some(_) => (),
@@ -240,19 +224,17 @@ impl Expand for [u8] {
 				Item::Conditional(Conditional::Else) if conditional => {
 					let mut level = 0;
 
-					while !input.is_empty() {
-						match next!() {
-							Item::Conditional(Conditional::End) if level == 0 => continue 'main,
-
+					loop {
+						if input.is_empty() {
+							return Err(error::Expand::Invalid.into());
+						}
+						match next_item(&mut input)? {
+							Item::Conditional(Conditional::End) if level == 0 => break,
 							Item::Conditional(Conditional::If) => level += 1,
-
 							Item::Conditional(Conditional::End) => level -= 1,
-
 							_ => (),
 						}
 					}
-
-					return Err(error::Expand::Invalid.into());
 				}
 
 				Item::Conditional(..) => return Err(error::Expand::Invalid.into()),
@@ -321,36 +303,7 @@ impl Expand for [u8] {
 
 				Item::Operation(Operation::Binary(operation)) => match (stack.pop(), stack.pop()) {
 					(Some(Parameter::Number(y)), Some(Parameter::Number(x))) => {
-						stack.push(Parameter::Number(match operation {
-							Binary::Add => x + y,
-							Binary::Subtract => x - y,
-							Binary::Multiply => x * y,
-							Binary::Divide => {
-								if y != 0 {
-									x / y
-								} else {
-									0
-								}
-							}
-							Binary::Remainder => {
-								if y != 0 {
-									x % y
-								} else {
-									0
-								}
-							}
-
-							Binary::AND => x & y,
-							Binary::OR => x | y,
-							Binary::XOR => x ^ y,
-
-							Binary::And => (x != 0 && y != 0) as i32,
-							Binary::Or => (x != 0 || y != 0) as i32,
-
-							Binary::Equal => (x == y) as i32,
-							Binary::Greater => (x > y) as i32,
-							Binary::Lesser => (x < y) as i32,
-						}))
+						stack.push(Parameter::Number(eval_binary(operation, x, y)))
 					}
 
 					(Some(_), Some(_)) => return Err(error::Expand::TypeMismatch.into()),
@@ -359,10 +312,9 @@ impl Expand for [u8] {
 				},
 
 				Item::Operation(Operation::Unary(operation)) => match stack.pop() {
-					Some(Parameter::Number(x)) => stack.push(Parameter::Number(match operation {
-						Unary::Not => (x != 0) as i32,
-						Unary::NOT => !x,
-					})),
+					Some(Parameter::Number(x)) => {
+						stack.push(Parameter::Number(eval_unary(operation, x)))
+					}
 
 					Some(_) => return Err(error::Expand::TypeMismatch.into()),
 
@@ -527,6 +479,57 @@ impl Expand for [u8] {
 		}
 
 		Ok(())
+	}
+}
+
+fn next_item<'input>(input: &mut &'input [u8]) -> error::Result<Item<'input>> {
+	Ok(match parse(input) {
+		Ok((rest, item)) => {
+			*input = rest;
+			item
+		}
+
+		Err(_) => return Err(error::Expand::Invalid.into()),
+	})
+}
+
+fn eval_binary(operation: Binary, x: i32, y: i32) -> i32 {
+	match operation {
+		Binary::Add => x + y,
+		Binary::Subtract => x - y,
+		Binary::Multiply => x * y,
+		Binary::Divide => {
+			if y != 0 {
+				x / y
+			} else {
+				0
+			}
+		}
+		Binary::Remainder => {
+			if y != 0 {
+				x % y
+			} else {
+				0
+			}
+		}
+
+		Binary::AND => x & y,
+		Binary::OR => x | y,
+		Binary::XOR => x ^ y,
+
+		Binary::And => (x != 0 && y != 0) as i32,
+		Binary::Or => (x != 0 || y != 0) as i32,
+
+		Binary::Equal => (x == y) as i32,
+		Binary::Greater => (x > y) as i32,
+		Binary::Lesser => (x < y) as i32,
+	}
+}
+
+fn eval_unary(operation: Unary, x: i32) -> i32 {
+	match operation {
+		Unary::Not => (x != 0) as i32,
+		Unary::NOT => !x,
 	}
 }
 
